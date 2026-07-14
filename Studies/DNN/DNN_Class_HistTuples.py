@@ -60,7 +60,7 @@ class DataWrapper:
         # During predict, we want to use a truly random param value even for signal!
         if param_value not in self.param_list:
             print(f"This param value {param_value} is not an option!")
-        new_params = np.array([[param_value for x in self.features]]).transpose()
+        new_params = np.array([[param_value for x in self.features]], dtype=np.float32).transpose()
 
         self.features_paramSet = np.append(self.features_no_param, new_params, axis=1)
 
@@ -160,13 +160,22 @@ class DataWrapper:
         with uproot.open(file_name) as file:
             tree = file["Events"]
             branches = tree.arrays(
-                ["DoubleLep_DeepHME_mass"],
+                ["DeepHME_mass"],
                 entry_start=entry_start,
                 entry_stop=entry_stop,
             )
             hme_mass = np.array(
-                getattr(branches, "DoubleLep_DeepHME_mass"), dtype="float32"
+                getattr(branches, "DeepHME_mass"), dtype="float32"
             )
+
+            # branches = tree.arrays(
+            #     ["m_bbllmet"],
+            #     entry_start=entry_start,
+            #     entry_stop=entry_stop,
+            # )
+            # hme_mass = np.array(
+            #     getattr(branches, "m_bbllmet"), dtype="float32"
+            # )
         return hme_mass
 
     def GetFatJetBTag(self, file_name, entry_start=None, entry_stop=None):
@@ -543,7 +552,8 @@ class Model(tf.keras.Model):
         self.setup = setup
         self.gamma1 = setup["gamma1"]
         self.gamma2 = setup["gamma2"]
-        self.loss_scale = setup["loss_scale"]
+        self.signal_loss_scale = setup["signal_loss_scale"]
+        self.multiclass_loss_scale = setup["multiclass_loss_scale"]
 
         self.nClasses = setup["nClasses"]
 
@@ -551,6 +561,7 @@ class Model(tf.keras.Model):
         # self.class_loss = tf.keras.losses.CategoricalFocalCrossentropy(reduction=None)
         self.class_loss = binary_focal_crossentropy
         self.multiclass_loss = categorical_entropy
+
 
         self.class_accuracy = tf.keras.metrics.categorical_accuracy
 
@@ -657,8 +668,8 @@ class Model(tf.keras.Model):
             multiclass_loss_vec = self.multiclass_loss(y_class, y_pred_class)
 
             class_loss_vec = (
-                signal_class_loss_vec
-                + self.loss_scale * multiclass_loss_vec
+                self.signal_loss_scale * signal_class_loss_vec
+                + self.multiclass_loss_scale * multiclass_loss_vec
                 # signal_class_loss_vec
             )
 
@@ -836,19 +847,17 @@ def train_dnn(
                 tf.one_hot(dw.class_target, nClasses),
                 # dw.class_weight,
                 dw.multiclass_weight,
+                # np.ones_like(dw.multiclass_weight),
                 dw.physics_weight,
             ),
         )
     )
+    train_tf_dataset = train_tf_dataset.cache("train_cache.tfdata")
     train_tf_dataset = train_tf_dataset.shuffle(
         len(train_tf_dataset), reshuffle_each_iteration=True
     )
-    # train_tf_dataset = train_tf_dataset.shuffle(
-    #     batch_size*100, reshuffle_each_iteration=True
-    # )
     batch_size_train = min(batch_size, train_tf_dataset.cardinality().numpy())
     train_tf_dataset = train_tf_dataset.batch(batch_size_train, drop_remainder=True)
-    train_tf_dataset = train_tf_dataset.cache("train_cache.tfdata")
 
     test_tf_dataset = tf.data.Dataset.from_tensor_slices(
         (
@@ -857,19 +866,30 @@ def train_dnn(
                 tf.one_hot(test_dw.class_target, nClasses),
                 # test_dw.class_weight,
                 test_dw.multiclass_weight,
+                # np.ones_like(test_dw.multiclass_weight),
                 test_dw.physics_weight,
             ),
         )
     )
+    test_tf_dataset = test_tf_dataset.cache("test_cache.tfdata")
     test_tf_dataset = test_tf_dataset.shuffle(
         len(test_tf_dataset), reshuffle_each_iteration=True
     )
-    # test_tf_dataset = test_tf_dataset.shuffle(
-    #     batch_size*100, reshuffle_each_iteration=True
-    # )
     batch_size_test = min(batch_size, test_tf_dataset.cardinality().numpy())
     test_tf_dataset = test_tf_dataset.batch(batch_size_test, drop_remainder=True)
-    test_tf_dataset = test_tf_dataset.cache("test_cache.tfdata")
+
+    print("Train multiclass_weight stats:")
+    print(f"  mean={np.mean(dw.multiclass_weight):.4f}, std={np.std(dw.multiclass_weight):.4f}")
+    print(f"  min={np.min(dw.multiclass_weight):.4f}, max={np.max(dw.multiclass_weight):.4f}")
+
+    print("Val multiclass_weight stats:")
+    print(f"  mean={np.mean(test_dw.multiclass_weight):.4f}, std={np.std(test_dw.multiclass_weight):.4f}")
+    print(f"  min={np.min(test_dw.multiclass_weight):.4f}, max={np.max(test_dw.multiclass_weight):.4f}")
+
+    for split, d in [("Train", dw), ("Val", test_dw)]:
+        vals, counts = np.unique(d.class_target, return_counts=True)
+        print(f"{split}: {dict(zip(vals, counts))}")
+        print(f"{split} weighted: {[np.sum(d.multiclass_weight[d.class_target==v]) for v in vals]}")
 
     parametric_mass_probability = np.ones(len(dw.param_list)) * 1.0 / len(dw.param_list)
     log_probs = tf.math.log([parametric_mass_probability])
@@ -999,8 +1019,8 @@ def train_dnn(
         plt.xlabel("Epoch")
         plt.legend(loc="upper right")
         plt.grid(True)
-        plt.yscale("log")
-        plt.ylim(bottom=0.0001, top=10.0)
+        # plt.yscale("log")
+        # plt.ylim(bottom=0.0001, top=10.0)
         plt.savefig(
             os.path.join(output_folder, "metrics", f"{metric}.pdf"), bbox_inches="tight"
         )
@@ -1019,6 +1039,16 @@ def train_dnn(
     PlotMetric(history, "weighted_bkg_at_sig_yield_value", output_folder)
     PlotMetric(history, "weighted_bkg_at_sig_yield_error", output_folder)
     PlotMetric(history, "weighted_bkg_at_sig_yield_score", output_folder)
+
+
+    print(f"Finished training, how is the per-class accuracy?")
+    for cls in range(setup["nClasses"]):
+        mask = dw.class_target == cls
+        preds = model(dw.features[mask])
+        predicted_class = np.argmax(preds, axis=1)
+        accuracy = np.mean(predicted_class == cls)
+        print(f"Class {setup["class_names"][cls]} accuracy: {accuracy:.3f}  (n={np.sum(mask)})")
+    
 
     input_shape = [None, dw.features.shape[1]]
     input_signature = [tf.TensorSpec(input_shape, tf.float32, name="x")]
@@ -1040,6 +1070,9 @@ def train_dnn(
 
     with open(os.path.join(output_folder, "dnn_config.yaml"), "w") as file:
         yaml.dump(features_config, file)
+
+    with open(os.path.join(output_folder, "history.yaml"), "w") as file:
+        yaml.dump(history, file)
 
     # Experimental 2-stage DNN
     # Binary stage 2 runs signal vs background using stage 1 score as additional input
@@ -1178,638 +1211,6 @@ def train_dnn(
     return
 
 
-def validate_dnn(
-    setup,
-    validation_file,
-    validation_weight_file,
-    output_folder,
-    model_name,
-    model_config,
-):
-    print(f"Model load {model_name}")
-    sess = ort.InferenceSession(model_name)
-
-    dnnConfig = {}
-    with open(model_config, "r") as file:
-        dnnConfig = yaml.safe_load(file)
-
-    dw = DataWrapper()
-    dw.AddInputFeatures(setup["features"])
-
-    dw.UseParametric(setup["UseParametric"])
-    dw.SetParamList(setup["parametric_list"])
-
-    # Prep a test dw
-    # Must copy before reading file so we can read the test file instead
-    test_dw = copy.deepcopy(dw)
-
-    entry_start = 0
-    # entry_stop = batch_size * 500 # Only load 500 batches for debuging now
-
-    # Do you want to make a larger batch? May increase speed
-    entry_stop = None
-
-    dw.ReadFile(
-        validation_file,
-        entry_start=entry_start,
-        entry_stop=entry_stop,
-    )
-    dw.ReadWeightFile(
-        validation_weight_file, entry_start=entry_start, entry_stop=entry_stop
-    )
-
-    hme_values = dw.GetHME(file_name=validation_file)
-    fatjet_btag_values = dw.GetFatJetBTag(file_name=validation_file)
-
-    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-    os.environ["TF_DETERMINISTIC_OPS"] = "1"
-    tf.random.set_seed(42)
-
-    nClasses = setup["nClasses"]
-
-    os.makedirs(output_folder, exist_ok=True)
-
-    feature_dict = {
-        "lep1_pt": [0.0, 500.0],
-        "lep1_legType": [-1.0, 3.0],
-        "lep2_pt": [0.0, 500.0],
-        "lep2_legType": [-1.0, 3.0],
-        "PuppiMET_pt": [0.0, 500.0],
-        "PuppiMET_phi": [-4.0, 4.0],
-        "HT": [0.0, 1000.0],
-        "dR_dilep": [0.0, 5.0],
-        "dR_dibjet": [0.0, 5.0],
-        "dR_dilep_dibjet": [0.0, 5.0],
-        "dPhi_lep1_lep2": [-4.0, 4.0],
-        "dPhi_MET_dilep": [-4.0, 4.0],
-        "dPhi_MET_dibjet": [-4.0, 4.0],
-        "MT": [0.0, 300.0],
-        "MT2_ll": [0.0, 300.0],
-        "MT2_bb": [0.0, 500.0],
-        "MT2_blbl": [0.0, 600.0],
-        "MT2_blbl2": [0.0, 600.0],
-        "ll_mass": [0.0, 100.0],
-        "CosTheta_bb": [-1.5, 1.5],
-        "bjet1_pt": [0.0, 500.0],
-        "bjet1_mass": [0.0, 50.0],
-        "bjet1_btagPNetB": [0.0, 1.0],
-        "bjet2_pt": [0.0, 500.0],
-        "bjet2_mass": [0.0, 50.0],
-        "bjet2_btagPNetB": [0.0, 1.0],
-    }
-
-    for cat in ["res2b", "boosted", "res1b"]:
-        ROOTOut = ROOT.TFile(
-            os.path.join(output_folder, f"validation_{cat}.root"), "RECREATE"
-        )
-
-        # para_masspoint_list = [300, 400, 500, 550, 600, 650, 700, 800, 900, 1000, 2000, 3000]
-        para_masspoint_list = dnnConfig["parametric_list"]
-        canvases = []
-        for para_masspoint in para_masspoint_list:
-            print(f"Validating mass {para_masspoint}")
-            fig, ax = plt.subplots()
-            if dw.use_parametric:
-                dw.SetPredictParamValue(para_masspoint)
-            features = (
-                dw.features_paramSet if dw.use_parametric else dw.features_no_param
-            )
-
-            print("Predicting")
-            print("Using features")
-            print(features)
-            print(type(features))
-            print(features.dtype)
-            # features = features.astype('double')
-            pred = sess.run(None, {"x": features})
-
-            print("What is pred?")
-            print(pred)
-            for nClass in range(nClasses):
-                print(f"Trying class {nClass}")
-                output_file = os.path.join(
-                    output_folder, f"validation_{cat}_class{nClass}.pdf"
-                )
-
-                pred_class = pred[0]
-                pred_signal = pred_class[:, nClass]
-
-                class_weight = dw.class_weight
-                physics_weight = dw.physics_weight
-
-                # Scale signal to BR
-                physics_weight = np.where(
-                    dw.class_target == 0,
-                    dw.physics_weight * 0.0264215349425664,
-                    dw.physics_weight,
-                )
-
-                if cat == "res2b":
-                    physics_weight = np.where(dw.res2b == 1, physics_weight, 0.0)
-                if cat == "boosted":
-                    physics_weight = np.where(dw.boosted == 1, physics_weight, 0.0)
-                if cat == "res1b":
-                    physics_weight = np.where(dw.recovery == 1, physics_weight, 0.0)
-
-                # This class is top score mask
-                score_mask = np.argmax(pred_signal) == nClass
-                print("Checking score mask")
-                print(pred_signal)
-                print(nClass)
-                print(score_mask)
-
-                # Class Plots
-                # Lets build Masks
-                Sig_This_Mass = dw.X_mass == para_masspoint
-                Sig_mask = (Sig_This_Mass) & (dw.class_target == 0)
-
-                Background_mask = dw.class_target == 1
-
-                TT_mask = dw.class_value == 1
-
-                DY_mask = dw.class_value == 2
-
-                Other_mask = dw.class_value == 3
-
-                nClass_mask = [Sig_mask, TT_mask, DY_mask, Other_mask]
-
-                # Set class quantiles based on signal
-                nQuantBins = 50
-                quant_binning_class = np.zeros(
-                    nQuantBins + 1
-                )  # Need +1 because 10 bins actually have 11 edges
-                if len(pred_signal[nClass_mask[nClass]]) == 0:
-                    print(
-                        f"No class {nClass} events in this mass point! Fake Quant Bins!"
-                    )
-                    quant_binning_class = np.linspace(0, 1, nQuantBins + 1)
-                else:
-                    quant_binning_class = np.quantile(
-                        pred_signal[nClass_mask[nClass]],
-                        np.linspace(0, 1, nQuantBins + 1),
-                    )
-                quant_binning_class[0] = 0.0
-                quant_binning_class[-1] = 1.0
-                print("We found quant binning class")
-                print(quant_binning_class)
-                # print("From the signal prediction")
-                # print(pred_signal[Sig_mask])
-
-                # Find HME min/max for signal (mean +/- 2 std)
-                hme_mean = np.mean(hme_values[Sig_mask])
-                hme_std = np.std(hme_values[Sig_mask])
-                hme_low = hme_mean - (1 * hme_std)
-                hme_high = hme_mean + (1 * hme_std)
-                # fatjet_btag_mask = fatjet_btag_values > 0.99
-                fatjet_btag_mask = True
-
-                # Do a quick significance scan for HME bounds
-                # Take the mean of signal's HME, then scan an asymmetric window around it to maximize significance s/sqrt(s+b)
-                best_significance = 0.0
-                best_hme_low = hme_low
-                best_hme_high = hme_high
-                for hme_low_scan in np.linspace(hme_mean - 5 * hme_std, hme_mean, 10):
-                    for hme_high_scan in np.linspace(
-                        hme_mean, hme_mean + 5 * hme_std, 10
-                    ):
-                        hme_mask_scan = (
-                            (hme_values > hme_low_scan)
-                            & (hme_values < hme_high_scan)
-                            & (fatjet_btag_mask)
-                        )
-                        s = np.sum(physics_weight[Sig_mask & hme_mask_scan])
-                        b = np.sum(physics_weight[Background_mask & hme_mask_scan])
-                        significance = s / np.sqrt(s + b + 1e-6)
-                        if significance > best_significance:
-                            best_significance = significance
-                            best_hme_low = hme_low_scan
-                            best_hme_high = hme_high_scan
-
-                print(
-                    f"For mass {para_masspoint} we have HME bounds [{best_hme_low}, {best_hme_high}]"
-                )
-                print(f"This had a significance of {best_significance}")
-                hme_mask = (
-                    (hme_values > best_hme_low)
-                    & (hme_values < best_hme_high)
-                    & (fatjet_btag_mask)
-                )
-                # hme_mask = True  # TEMPORARY, REMOVE THIS TO ENABLE HME CUT
-
-                mask_dict = {
-                    "Signal": Sig_mask & hme_mask,
-                    "TT": TT_mask & hme_mask,
-                    "DY": DY_mask & hme_mask,
-                    "Other": Other_mask & hme_mask,
-                }
-
-                canvases.append(
-                    ROOT.TCanvas("c1", "c1", 1200, 600 * len(mask_dict.keys()))
-                )
-                canvas = canvases[-1]
-                canvas.Divide(1, len(mask_dict.keys()))
-                Class_list = []
-                legend_list = []
-                pads_list = []
-                DNN_vs_HME_list = []
-                DNN_vs_FatJetBTag_list = []
-                DNN_vs_input = []
-                for i, process_name in enumerate(mask_dict.keys()):
-                    canvas.cd(i + 1)
-                    mask = mask_dict[process_name]
-
-                    class_out_hist, bins = np.histogram(
-                        pred_signal[mask],
-                        bins=quant_binning_class,
-                        range=(0.0, 1.0),
-                        weights=physics_weight[mask],
-                    )
-                    class_out_hist_w2, bins = np.histogram(
-                        pred_signal[mask],
-                        bins=quant_binning_class,
-                        range=(0.0, 1.0),
-                        weights=physics_weight[mask] ** 2,
-                    )
-
-                    Class_list.append(
-                        ROOT.TH1D(
-                            f"Class{nClass}Output_{process_name}",
-                            f"Class{nClass}Output_{process_name}",
-                            nQuantBins,
-                            0.0,
-                            1.0,
-                        )
-                    )
-
-                    ROOT_ClassOutput = Class_list[-1]
-
-                    for binnum in range(nQuantBins):
-                        ROOT_ClassOutput.SetBinContent(
-                            binnum + 1, class_out_hist[binnum]
-                        )
-                        ROOT_ClassOutput.SetBinError(
-                            binnum + 1, class_out_hist_w2[binnum] ** (0.5)
-                        )
-
-                    ROOTOut.WriteObject(
-                        ROOT_ClassOutput,
-                        f"m{para_masspoint}_{process_name}_class{nClass}",
-                    )
-
-                    # Make a ROOT.TH2D of the DNN prediction vs dw.GetHME(file_name)
-                    DNN_vs_HME_list.append(
-                        ROOT.TH2D(
-                            f"DNN_vs_HME_m{para_masspoint}_{process_name}_class{nClass}",
-                            f"DNN_vs_HME_m{para_masspoint}_{process_name}_class{nClass}",
-                            100,
-                            0.0,
-                            1.0,
-                            250,
-                            0.0,
-                            2500.0,
-                            # 250,
-                            # 5.0,
-                            # 8.0,
-                        )
-                    )
-                    DNN_vs_HME = DNN_vs_HME_list[-1]
-                    this_dnn_values = pred_signal[mask]
-                    this_hme_values = hme_values[mask]
-                    for dnn_val, hme_val in zip(this_dnn_values, this_hme_values):
-                        # DNN_vs_HME.Fill(dnn_val, np.log(hme_val))
-                        DNN_vs_HME.Fill(dnn_val, hme_val)
-
-                    ROOTOut.WriteObject(
-                        DNN_vs_HME,
-                        f"DNN_vs_HME_m{para_masspoint}_{process_name}_class{nClass}",
-                    )
-
-                    # Make a ROOT.TH2D of the DNN prediction vs dw.GetFatJetBTag(file_name)
-                    DNN_vs_FatJetBTag_list.append(
-                        ROOT.TH2D(
-                            f"DNN_vs_FatJetBTag_m{para_masspoint}_{process_name}_class{nClass}",
-                            f"DNN_vs_FatJetBTag_m{para_masspoint}_{process_name}_class{nClass}",
-                            100,
-                            0.0,
-                            1.0,
-                            100,
-                            0.0,
-                            1.0,
-                        )
-                    )
-                    DNN_vs_FatJetBTag = DNN_vs_FatJetBTag_list[-1]
-                    this_fatjet_btag_values = fatjet_btag_values[mask]
-                    for dnn_val, fatjet_btag_val in zip(
-                        this_dnn_values, this_fatjet_btag_values
-                    ):
-                        DNN_vs_FatJetBTag.Fill(dnn_val, fatjet_btag_val)
-
-                    ROOTOut.WriteObject(
-                        DNN_vs_FatJetBTag,
-                        f"DNN_vs_FatJetBTag_m{para_masspoint}_{process_name}_class{nClass}",
-                    )
-
-                    print(f"Input features are {setup['features']}")
-
-                    # For each input feature, do the 2D DNNvsFeature plot
-                    plot_features = set(setup["features"])
-                    # plot_features.add("fatbjet_particleNetWithMass_HbbvsQCD") # Add the fatjet tagger manually
-                    for feature in plot_features:
-                        feature_mean = np.mean(
-                            dw.features[:, setup["features"].index(feature)][mask]
-                        )
-                        feature_std = np.std(
-                            dw.features[:, setup["features"].index(feature)][mask]
-                        )
-                        feature_low = feature_mean - (2 * feature_std)
-                        feature_high = feature_mean + (2 * feature_std)
-
-                        if feature in feature_dict:
-                            feature_low, feature_high = feature_dict[feature]
-
-                        DNN_vs_input.append(
-                            ROOT.TH2D(
-                                f"DNN_vs_{feature}_m{para_masspoint}_{process_name}_class{nClass}",
-                                f"DNN_vs_{feature}_m{para_masspoint}_{process_name}_class{nClass}",
-                                100,
-                                0.0,
-                                1.0,
-                                100,
-                                # Min and max the features as 2 sigma from mean
-                                feature_low,
-                                feature_high,
-                                # np.min(dw.features[:, setup["features"].index(feature)]),
-                                # np.max(dw.features[:, setup["features"].index(feature)])*1.1,  # Add 10% padding on max for better visualization
-                            )
-                        )
-                        DNN_vs_Feature = DNN_vs_input[-1]
-                        this_feature_values = dw.features[
-                            :, setup["features"].index(feature)
-                        ][mask]
-                        for dnn_val, feature_val in zip(
-                            this_dnn_values, this_feature_values
-                        ):
-                            DNN_vs_Feature.Fill(dnn_val, feature_val)
-
-                        ROOTOut.WriteObject(
-                            DNN_vs_Feature,
-                            f"DNN_vs_{feature}_m{para_masspoint}_{process_name}_class{nClass}",
-                        )
-
-                    if ROOT_ClassOutput.Integral() == 0:
-                        print(
-                            f"Process {process_name} has no class entries, maybe the background doesn't exist?"
-                        )
-                        continue
-
-                    # ROOT_ClassOutput.Scale(1.0 / ROOT_ClassOutput.Integral())
-
-                    pads_list.append(ROOT.TPad("p1", "p1", 0.0, 0.3, 1.0, 0.9, 0, 0, 0))
-                    p1 = pads_list[-1]
-                    p1.SetTopMargin(0)
-                    p1.Draw()
-
-                    p1.cd()
-
-                    plotlabel = f"Class {nClass} Output for {process_name} ParaMass {para_masspoint} GeV {cat}"
-                    ROOT_ClassOutput.Draw()
-                    ROOT_ClassOutput.SetTitle(plotlabel)
-                    ROOT_ClassOutput.SetStats(0)
-                    min_val = max(
-                        0.0001,
-                        ROOT_ClassOutput.GetMinimum(),
-                    )
-                    max_val = ROOT_ClassOutput.GetMaximum()
-
-                    ROOT_ClassOutput.GetYaxis().SetRangeUser(
-                        0.001 * min_val, 1000 * max_val
-                    )
-
-                    legend_list.append(ROOT.TLegend(0.5, 0.8, 0.9, 0.9))
-                    legend = legend_list[-1]
-                    legend.AddEntry(ROOT_ClassOutput, f"{process_name}")
-                    legend.Draw()
-
-                    print(
-                        f"Setting canvas to log scale with range {min_val}, {max_val}"
-                    )
-                    p1.SetLogy()
-                    p1.SetGrid()
-
-                # if para_masspoint == para_masspoint_list[0]:
-                #     canvas.Print(f"{output_file}(", f"Title:Mass {para_masspoint} GeV")
-                #     print("Saved [")
-                # elif para_masspoint == para_masspoint_list[-1]:
-                #     canvas.Print(f"{output_file})", f"Title:Mass {para_masspoint} GeV")
-                #     print("Saved ]")
-                # else:
-                #     canvas.Print(f"{output_file}", f"Title:Mass {para_masspoint} GeV")
-                # print(f"Saved mass {para_masspoint}")
-
-                canvas.Close()
-
-                canvas = ROOT.TCanvas("c1", "c1", 800, 600)
-                legend = ROOT.TLegend(0.5, 0.8, 0.9, 0.9)
-                pad_class = ROOT.TPad("class", "class", 0.0, 0.3, 1.0, 0.9, 0, 0, 0)
-                pad_soverb = ROOT.TPad("soverb", "soverb", 0.0, 0.1, 1.0, 0.3, 0, 0, 0)
-                pad_class.SetTopMargin(0)
-                pad_class.Draw()
-
-                pad_soverb.SetTopMargin(0)
-                pad_soverb.SetBottomMargin(0)
-                pad_soverb.Draw()
-
-                pad_class.cd()
-
-                soverb = Class_list[0].Clone()
-                background = Class_list[1].Clone()
-
-                color_list = [ROOT.kRed, ROOT.kBlue, ROOT.kGreen, ROOT.kMagenta]
-                marker_list = [105, 107, 108, 109]
-                for i in range(len(Class_list)):
-                    if i == 0:
-                        Class_list[i].Draw()
-                    else:
-                        Class_list[i].Draw("same")
-                    if i > 1:
-                        background.Add(Class_list[i].Clone())
-                    Class_list[i].SetLineColor(color_list[i])
-                    Class_list[i].SetMarkerStyle(marker_list[i])
-                    Class_list[i].SetMarkerColor(color_list[i])
-                    Class_list[i].SetMarkerSize(0.1)
-                    legend.AddEntry(Class_list[i], Class_list[i].GetTitle())
-
-                Class_list[0].GetYaxis().SetRangeUser(0.0001, 10000)
-
-                legend.Draw()
-                # canvas.SetLogy()
-                # canvas.SetGrid()
-
-                pad_class.SetLogy()
-                pad_class.SetGrid()
-
-                pad_soverb.cd()
-
-                soverb.SetTitle("S over B")
-                soverb.Divide(background)
-                soverb.Draw()
-
-                pad_soverb.SetLogy()
-                pad_soverb.SetGrid()
-
-                if para_masspoint == para_masspoint_list[0]:
-                    canvas.Print(
-                        f"{output_file}(",
-                        f"Title:Mass {para_masspoint} {cat} class{nClass} GeV",
-                    )
-                elif para_masspoint == para_masspoint_list[-1]:
-                    canvas.Print(
-                        f"{output_file})",
-                        f"Title:Mass {para_masspoint} {cat} class{nClass} GeV",
-                    )
-                else:
-                    canvas.Print(
-                        f"{output_file}",
-                        f"Title:Mass {para_masspoint} {cat} class{nClass} GeV",
-                    )
-                canvas.Close()
-
-                if np.sum(physics_weight[dw.class_target == 1]) > 0:
-                    print("sum weights:", np.sum(physics_weight))
-                    print("min weight:", np.min(physics_weight))
-                    print("max weight:", np.max(physics_weight))
-                    display = sklearn.metrics.RocCurveDisplay.from_predictions(
-                        dw.class_target == 0,
-                        pred_signal,
-                        sample_weight=np.clip(physics_weight, 0, None),
-                        ax=ax,
-                        name=f"Signal vs rest m{para_masspoint} class{nClass}",
-                    )
-                    _ = display.ax_.set(
-                        xlabel="False Positive Rate",
-                        ylabel="True Positive Rate",
-                        title="Signal-vs-Background ROC curves",
-                    )
-
-            ax.plot([0, 1], [0, 1], linestyle="--")
-            ax.set_title(f"ROC Curves {cat} m{para_masspoint} GeV")
-            ax.grid()
-            plt.savefig(os.path.join(output_folder, f"ROC_{cat}_m{para_masspoint}.pdf"))
-
-            # =========================
-            # Feature Importance Study
-            # =========================
-
-            print(
-                f"Running permutation feature importance for mass {para_masspoint}..."
-            )
-
-            # Use correct feature set
-            features = (
-                dw.features_paramSet if dw.use_parametric else dw.features_no_param
-            )
-
-            # Define signal vs background
-            y_binary = (dw.class_target == 0).astype(int)
-
-            # Use physics weights
-            weights = dw.physics_weight
-
-            # Select only features in this category
-            if cat == "res2b":
-                category_mask = dw.res2b == 1
-            elif cat == "boosted":
-                category_mask = dw.boosted == 1
-            elif cat == "res1b":
-                category_mask = dw.recovery == 1
-            else:
-                category_mask = np.ones(len(dw.class_target), dtype=bool)
-
-            if np.sum(category_mask) == 0:
-                print(
-                    f"No events in category {cat} for mass {para_masspoint}, skipping feature importance."
-                )
-                continue
-
-            features = features[category_mask]
-            y_binary = y_binary[category_mask]
-            weights = weights[category_mask]
-
-            # Optional: subsample for speed
-            max_events = 1000000
-            if len(features) > max_events:
-                idx = np.random.choice(len(features), max_events, replace=False)
-                features_sample = features[idx]
-                y_sample = y_binary[idx]
-                w_sample = weights[idx]
-            else:
-                features_sample = features
-                y_sample = y_binary
-                w_sample = weights
-
-            baseline_auc, importances = permutation_importance_onnx(
-                sess,
-                features_sample,
-                y_sample,
-                w_sample,
-                n_repeats=3,
-            )
-
-            print(f"Baseline AUC: {baseline_auc:.4f}")
-
-            # Sort importance
-            sorted_idx = np.argsort(importances)[::-1]
-
-            print("\nFeature importance ranking:")
-            for rank, i in enumerate(sorted_idx):
-                if i > len(setup["features"]):
-                    print(f"i {i} out of range, must be the stage-1 score")
-                    feature_name = "stage1_score"
-                    print(
-                        f"{rank+1:2d}. {feature_name:30s}  ΔAUC = {importances[i]:.6f}"
-                    )
-                else:
-                    print(
-                        f"{rank+1:2d}. {setup['features'][i]:30s}  ΔAUC = {importances[i]:.6f}"
-                    )
-
-            os.makedirs(
-                os.path.join(output_folder, "feature_importance"), exist_ok=True
-            )
-
-            plt.figure(figsize=(10, 6))
-            plt.bar(range(len(importances)), importances[sorted_idx])
-
-            plt.xticks(
-                range(len(importances)),
-                [setup["features"][i] for i in sorted_idx],
-                rotation=90,
-            )
-
-            plt.ylabel("AUC drop (importance)")
-            plt.title(f"Permutation Feature Importance {cat} m{para_masspoint} GeV")
-            plt.grid(True)
-
-            plt.tight_layout()
-            plt.savefig(
-                os.path.join(
-                    output_folder,
-                    "feature_importance",
-                    f"importance_{cat}_m{para_masspoint}.pdf",
-                )
-            )
-            plt.close()
-
-        data_obs = ROOT.TH1D(
-            f"data_obs",
-            f"data_obs",
-            nQuantBins,
-            0.0,
-            1.0,
-        )
-        ROOTOut.WriteObject(data_obs, f"data_obs")
-
-
 # =========================================================
 # 1. LOAD MODEL + CONFIG
 # =========================================================
@@ -1859,29 +1260,50 @@ def get_scores(sess, X, stage="multi"):
 # =========================================================
 # 4. EVENT MASKING
 # =========================================================
-def build_event_masks(dw, hme_values, cat, para_masspoint, hme_cut=False):
+def build_event_masks(dw, hme_values, cat, para_masspoint, setup=None, hme_cut=False):
+
+    default_class_names = [
+        "Signal",
+        "TT",
+        "DY",
+        "ST",
+        "SMHiggs",
+        "VV",
+        "Other",
+    ]
+    class_names = (
+        setup.get("class_names", default_class_names)
+        if setup is not None
+        else default_class_names
+    )
+    if len(class_names) < 2:
+        raise ValueError(
+            "build_event_masks requires at least two class names: signal plus backgrounds"
+        )
 
     signal_mask = (dw.X_mass == para_masspoint) & (dw.class_target == 0)
-    TT_mask = dw.class_value == 1
-    DY_mask = dw.class_value == 2
-    Other_mask = dw.class_value == 3
-    Background_mask = dw.class_target == 1
+    Background_mask = dw.class_target != 0
 
     physics_weight = np.copy(dw.physics_weight)
-    physics_weight = np.where(
-        dw.class_target == 0,
-        physics_weight * 0.0264215349425664,
-        physics_weight,
-    )
+    # Starting in production v2605a, we now include the BR inside signal XS
+    # physics_weight = np.where(
+    #     dw.class_target == 0,
+    #     physics_weight * 0.0264215349425664,
+    #     physics_weight,
+    # )
 
     cat_name = "recovery" if cat == "res1b" else cat
     cat_mask = getattr(dw, cat_name) == 1
     physics_weight = np.where(cat_mask, physics_weight, 0)
 
+    signal_and_cat_mask = (signal_mask & cat_mask)
+
     if hme_cut:
-        hme_mean = np.mean(hme_values[signal_mask])
-        hme_std = np.std(hme_values[signal_mask])
-        hme_mask = (hme_values > hme_mean - hme_std) & (hme_values < hme_mean + hme_std)
+        hme_mean = np.mean(hme_values[signal_and_cat_mask])
+        hme_std = np.std(hme_values[signal_and_cat_mask])
+        hme_mask = (hme_values > hme_mean - hme_std) & (
+            hme_values < hme_mean + hme_std
+        )
 
         # Do a quick significance scan for HME bounds
         # Take the mean of signal's HME, then scan an asymmetric window around it to maximize significance s/sqrt(s+b)
@@ -1893,7 +1315,7 @@ def build_event_masks(dw, hme_values, cat, para_masspoint, hme_cut=False):
                 hme_mask_scan = (hme_values > hme_low_scan) & (
                     hme_values < hme_high_scan
                 )
-                s = np.sum(physics_weight[signal_mask & hme_mask_scan])
+                s = np.sum(physics_weight[signal_and_cat_mask & hme_mask_scan])
                 b = np.sum(physics_weight[Background_mask & hme_mask_scan])
                 significance = s / np.sqrt(s + b + 1e-6)
                 if significance > best_significance:
@@ -1914,11 +1336,10 @@ def build_event_masks(dw, hme_values, cat, para_masspoint, hme_cut=False):
         hme_mask = True  # Skip hme filtering for now
 
     mask_dict = {
-        "Signal": signal_mask & hme_mask,
-        "TT": TT_mask & hme_mask,
-        "DY": DY_mask & hme_mask,
-        "Other": Other_mask & hme_mask,
+        class_names[0]: signal_mask & hme_mask,
     }
+    for idx, class_name in enumerate(class_names[1:], start=1):
+        mask_dict[class_name] = (dw.class_value == idx) & hme_mask
 
     return mask_dict, physics_weight
 
@@ -1927,8 +1348,15 @@ def build_event_masks(dw, hme_values, cat, para_masspoint, hme_cut=False):
 # 5. CLASS HISTOGRAMS
 # =========================================================
 def make_hist(values, mask, weights, bins):
-    h, _ = np.histogram(values[mask], bins=bins, weights=weights[mask])
-    h2, _ = np.histogram(values[mask], bins=bins, weights=weights[mask] ** 2)
+    values_masked = values[mask]
+    weights_masked = weights[mask]
+    h, _ = np.histogram(values_masked, bins=bins, weights=weights_masked)
+    h2, _ = np.histogram(values_masked, bins=bins, weights=weights_masked ** 2)
+    return h, np.sqrt(h2)
+
+def make_hist2d(values_x, values_y, mask, weights, bins):
+    h, _, _ = np.histogram2d(values_x[mask], values_y[mask], bins=bins, weights=weights[mask])
+    h2, _, _ = np.histogram2d(values_x[mask], values_y[mask], bins=bins, weights=weights[mask] ** 2)
     return h, np.sqrt(h2)
 
 
@@ -1959,114 +1387,219 @@ def write_root_outputs(
     para_masspoint,
     process_tag,
     class_idx=0,
-    bin_format="quantile",
 ):
 
     # =========================================================
     # QUANTILE BINNING FROM SIGNAL (stage-2 target)
     # =========================================================
 
-    class_names = ["Signal", "TT", "DY", "Other"]
+    default_class_names = [
+        "Signal",
+        "TT",
+        "DY",
+        "ST",
+        "SMHiggs",
+        "VV",
+        "Other",
+    ]
+    class_names = setup.get("class_names", default_class_names)
+    if class_idx >= len(class_names):
+        raise IndexError(
+            f"class_idx {class_idx} is out of range for class_names {class_names}"
+        )
     class_idx_mask = mask_dict[class_names[class_idx]]
 
-    bins = np.linspace(0, 1, 51)  # Default to uniform bins
-    if bin_format == "quantile":
-        nBins = 50
-        bin_low = 0
-        bin_high = 1
-        pred_plot = pred
-        bins = get_quantile_bins(pred, class_idx_mask, n_bins=nBins)
-        bins[0] = 0.0
-        bins[-1] = 1.0
-    elif bin_format == "raw":
-        nBins = 50
-        bin_low = 0
-        bin_high = 1
-        pred_plot = pred
-        bins = np.linspace(0, 1, nBins + 1)
-    elif bin_format == "logit":
-        nBins = 150
-        bin_low = -15
-        bin_high = 15
-        pred_plot = np.clip(pred, 1e-7, 1 - 1e-7)  # Prevent log(0) or log(1)
-        pred_plot = np.log(pred_plot / (1 - pred_plot))  # Convert to logit space
-        bins = np.linspace(
-            bin_low, bin_high, nBins + 1
-        )  # Adjust range as needed for logits
+    # Quantile version
+    nBins_quant = 50
+    bin_low_quant, bin_high_quant = 0, 1
+    pred_plot_quant = pred
+    bins_quant = get_quantile_bins(pred_plot_quant, class_idx_mask, n_bins=nBins_quant)
+    bins_quant[0] = 0.0
+    bins_quant[-1] = 1.0
 
-    print(f"Starting root output for class {class_idx} on process {process_tag}")
-    print(f"Using binning {bins}")
+    # Raw version
+    nBins_raw = 50
+    bin_low_raw, bin_high_raw = 0, 1
+    pred_plot_raw = pred
+    bins_raw = np.linspace(0, 1, nBins_raw + 1)
+
+    # Logit version
+    nBins_logit = 150
+    bin_low_logit, bin_high_logit = -7.5, 7.5
+    pred_plot_logit = np.clip(pred, 1e-7, 1 - 1e-7)
+    pred_plot_logit = np.log(pred_plot_logit / (1 - pred_plot_logit))
+    bins_logit = np.linspace(bin_low_logit, bin_high_logit, nBins_logit + 1)
+
+
+    print(f"Starting root output for class {setup["class_names"][class_idx]} on process {process_tag}")
 
     ROOTOut.cd()
-    if not ROOTOut.GetDirectory("2D_plots"):
-        ROOTOut.mkdir("2D_plots")  # Always try, returns None or pointer
+    plot_dir_2d = f"2D_plots_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_2d):
+        ROOTOut.mkdir(plot_dir_2d)  # Always try, returns None or pointer
 
-    dir2d = ROOTOut.GetDirectory("2D_plots")
+    dir2d = ROOTOut.GetDirectory(plot_dir_2d)
     if not dir2d:  # null-pointer check, not 'is None'
         # Try alternative: sometimes in ROOT, directories are not attached until written
-        raise RuntimeError("Failed to create or access ROOT directory '2D_plots'.")
+        raise RuntimeError(f"Failed to create or access ROOT directory '{plot_dir_2d}'.")
 
-    if not ROOTOut.GetDirectory("HME_plots"):
-        ROOTOut.mkdir("HME_plots")  # Always try, returns None or pointer
+    plot_dir_hme = f"HME_plots_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_hme):
+        ROOTOut.mkdir(plot_dir_hme)  # Always try, returns None or pointer
 
-    dirHME = ROOTOut.GetDirectory("HME_plots")
+    dirHME = ROOTOut.GetDirectory(plot_dir_hme)
     if not dirHME:  # null-pointer check, not 'is None'
         # Try alternative: sometimes in ROOT, directories are not attached until written
         raise RuntimeError("Failed to create or access ROOT directory 'HME_plots'.")
 
+    plot_dir_hme2D = f"HME_vs_DNN_plots_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_hme2D):
+        ROOTOut.mkdir(plot_dir_hme2D)  # Always try, returns None or pointer
+
+    dirHMEvsDNN = ROOTOut.GetDirectory(plot_dir_hme2D)
+    if not dirHMEvsDNN:  # null-pointer check, not 'is None'
+        # Try alternative: sometimes in ROOT, directories are not attached until written
+        raise RuntimeError(f"Failed to create or access ROOT directory '{plot_dir_hme2D}'.")
+
+    plot_dir_raw = f"DNNRaw_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_raw):
+        ROOTOut.mkdir(plot_dir_raw)  # Always try, returns None or pointer
+
+    dirDNNRaw = ROOTOut.GetDirectory(plot_dir_raw)
+    if not dirDNNRaw:  # null-pointer check, not 'is None'
+        # Try alternative: sometimes in ROOT, directories are not attached until written
+        raise RuntimeError(f"Failed to create or access ROOT directory '{plot_dir_raw}'.")
+
+    plot_dir_quant = f"DNNQuantile_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_quant):
+        ROOTOut.mkdir(plot_dir_quant)  # Always try, returns None or pointer
+
+    dirDNNQuant = ROOTOut.GetDirectory(plot_dir_quant)
+    if not dirDNNQuant:  # null-pointer check, not 'is None'
+        # Try alternative: sometimes in ROOT, directories are not attached until written
+        raise RuntimeError(f"Failed to create or access ROOT directory '{plot_dir_quant}'.")
+
+    plot_dir_logit = f"DNNLogit_m{para_masspoint}"
+    if not ROOTOut.GetDirectory(plot_dir_logit):
+        ROOTOut.mkdir(plot_dir_logit)  # Always try, returns None or pointer
+
+    dirDNNLogit = ROOTOut.GetDirectory(plot_dir_logit)
+    if not dirDNNLogit:  # null-pointer check, not 'is None'
+        # Try alternative: sometimes in ROOT, directories are not attached until written
+        raise RuntimeError(f"Failed to create or access ROOT directory '{plot_dir_logit}'.")
+
     for pname, mask in mask_dict.items():
+
+        print(f"On pname {pname}")
 
         # -----------------------
         # 1D DNN histogram
         # -----------------------
-        h = ROOT.TH1D(
-            f"DNN_{pname}_m{para_masspoint}_c{class_idx}", "", nBins, bin_low, bin_high
+        h_raw = ROOT.TH1D(
+            f"DNNRaw_{pname}_m{para_masspoint}_c{class_idx}", "", nBins_raw, bin_low_raw, bin_high_raw
         )
 
-        hist, err = make_hist(pred_plot, mask, physics_weight, bins)
+        hist, err = make_hist(pred_plot_raw, mask, physics_weight, bins_raw)
 
-        for i in range(nBins):
-            h.SetBinContent(i + 1, hist[i])
-            h.SetBinError(i + 1, err[i])
+        for i in range(nBins_raw):
+            h_raw.SetBinContent(i + 1, hist[i])
+            h_raw.SetBinError(i + 1, err[i])
 
-        ROOTOut.WriteObject(h, f"m{para_masspoint}_{pname}_class{class_idx}")
+        dirDNNRaw.WriteObject(h_raw, f"m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}")
+
+        h_quant = ROOT.TH1D(
+            f"DNNQuant_{pname}_m{para_masspoint}_c{class_idx}", "", nBins_quant, bin_low_quant, bin_high_quant
+        )
+
+        hist, err = make_hist(pred_plot_quant, mask, physics_weight, bins_quant)
+
+        for i in range(nBins_quant):
+            h_quant.SetBinContent(i + 1, hist[i])
+            h_quant.SetBinError(i + 1, err[i])
+
+        dirDNNQuant.WriteObject(h_quant, f"m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}")
+
+        h_logit = ROOT.TH1D(
+            f"DNNLogit_{pname}_m{para_masspoint}_c{setup['class_names'][class_idx]}", "", nBins_logit, bin_low_logit, bin_high_logit
+        )
+
+        hist, err = make_hist(pred_plot_logit, mask, physics_weight, bins_logit)
+
+        for i in range(nBins_logit):
+            h_logit.SetBinContent(i + 1, hist[i])
+            h_logit.SetBinError(i + 1, err[i])
+
+        dirDNNLogit.WriteObject(h_logit, f"m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}")
 
         # -----------------------
         # 1D HME histogram
         # -----------------------
-        hme_bins = np.linspace(0.0, 2500.0, 251)
-        dirHME.cd()
-        h = ROOT.TH1D(f"HME_{pname}_m{para_masspoint}", "", 250, 0.0, 2500.0)
+        if class_idx == 0:
+            # Only do HME 1D on the class idx 0 since it should be repeats
+            hme_bins = np.linspace(0.0, 2500.0, 251)
+            dirHME.cd()
+            h = ROOT.TH1D(f"HME_{pname}_m{para_masspoint}", "", 250, 0.0, 2500.0)
 
-        hist, err = make_hist(feature_values["hme"], mask, physics_weight, hme_bins)
+            hist, err = make_hist(feature_values["hme"], mask, physics_weight, hme_bins)
 
-        for i in range(nBins):
-            h.SetBinContent(i + 1, hist[i])
-            h.SetBinError(i + 1, err[i])
+            for i in range(250):
+                h.SetBinContent(i + 1, hist[i])
+                h.SetBinError(i + 1, err[i])
 
-        dirHME.WriteObject(h, f"HME_m{para_masspoint}_{pname}")
+            dirHME.WriteObject(h, f"HME_m{para_masspoint}_{pname}")
 
         # -----------------------
         # 2D DNN vs HME
         # -----------------------
-        dir2d.cd()
-        h2 = ROOT.TH2D(
-            f"DNN_vs_HME_{pname}_m{para_masspoint}_c{class_idx}",
-            "",
-            100,
-            0,
-            1,
-            250,
-            0,
-            2500,
+        dirHMEvsDNN.cd()
+
+        hme_bins = np.linspace(0.0, 2500.0, 251)
+
+        h2_raw = ROOT.TH2D(
+            f"DNNRaw_vs_HME_{pname}_m{para_masspoint}_c{class_idx}", "", nBins_raw, bin_low_raw, bin_high_raw, 250, 0, 2500
         )
 
-        for dnn, hme in zip(pred[mask], feature_values["hme"][mask]):
-            h2.Fill(dnn, hme)
+        # Quantile binning must be done this way as it requires the binning to be applied (not a math transform on predictions)
+        h2_quant = ROOT.TH2D(
+            f"DNNQuant_vs_HME_{pname}_m{para_masspoint}_c{class_idx}", "", nBins_quant, bin_low_quant, bin_high_quant, 250, 0, 2500
+        )
+        hist, err = make_hist2d(pred_plot_quant, feature_values["hme"], mask, physics_weight, [bins_quant, hme_bins])
 
-        dir2d.WriteObject(
-            h2,
-            f"DNN_vs_HME_m{para_masspoint}_{pname}_class{class_idx}",
+        h2_logit = ROOT.TH2D(
+            f"DNNLogit_vs_HME_{pname}_m{para_masspoint}_c{class_idx}", "", nBins_logit, bin_low_logit, bin_high_logit, 250, 0, 2500
+        )
+
+        for i in range(nBins_quant):
+            for j in range(len(hme_bins) - 1):
+                h2_quant.SetBinContent(i+1, j+1, hist[i][j])
+                h2_quant.SetBinError(i+1, j+1, err[i][j])
+
+
+        pred_plot_raw_masked = np.ascontiguousarray(pred_plot_raw[mask], dtype=np.float64)
+        pred_plot_logit_masked = np.ascontiguousarray(pred_plot_logit[mask], dtype=np.float64)
+        hme_masked = np.ascontiguousarray(feature_values["hme"][mask], dtype=np.float64)
+        w_masked = np.ascontiguousarray(physics_weight[mask], dtype=np.float64)
+        n_events = len(pred_plot_raw_masked)
+
+        h2_raw.Sumw2()
+        h2_logit.Sumw2()
+
+        h2_raw.FillN(n_events, pred_plot_raw_masked, hme_masked, w_masked)
+        h2_logit.FillN(n_events, pred_plot_logit_masked, hme_masked, w_masked)
+
+        dirHMEvsDNN.WriteObject(
+            h2_raw,
+            f"DNNRaw_vs_HME_m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}",
+        )
+
+        dirHMEvsDNN.WriteObject(
+            h2_quant,
+            f"DNNQuant_vs_HME_m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}",
+        )
+
+        dirHMEvsDNN.WriteObject(
+            h2_logit,
+            f"DNNLogit_vs_HME_m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}",
         )
 
         # -----------------------
@@ -2074,7 +1607,8 @@ def write_root_outputs(
         # -----------------------
         for i, feat in enumerate(setup["features"]):
 
-            x = feature_values["features"][:, i][mask]
+            feat_masked = np.ascontiguousarray(feature_values["features"][:,i], dtype=np.float64)
+            x_min, x_max = np.min(feat_masked), np.max(feat_masked)
 
             h2f = ROOT.TH2D(
                 f"DNN_vs_{feat}_{pname}_m{para_masspoint}_c{class_idx}",
@@ -2083,43 +1617,45 @@ def write_root_outputs(
                 0,
                 1,
                 100,
-                np.min(x),
-                np.max(x),
+                x_min,
+                x_max,
             )
 
-            for dnn, val in zip(pred[mask], x):
-                h2f.Fill(dnn, val)
+            h2f.Sumw2()
+            h2f.FillN(n_events, pred_plot_raw_masked, feat_masked, w_masked)
 
             dir2d.WriteObject(
                 h2f,
-                f"DNN_vs_{feat}_m{para_masspoint}_{pname}_class{class_idx}",
+                f"DNN_vs_{feat}_m{para_masspoint}_{pname}_class{setup['class_names'][class_idx]}",
             )
 
         # -----------------------
         # 2D DNN vs Stage1 Score
         # -----------------------
-        if "stage1_score" in feature_values.keys():
-            h2 = ROOT.TH2D(
-                f"DNN_vs_Stage1_Score_{pname}_m{para_masspoint}_c{class_idx}",
-                "",
-                100,
-                0,
-                1,
-                100,
-                0,
-                1,
-            )
+        if "stage1_score" in feature_values.keys() and np.any(mask):
+            stage1_values = feature_values["stage1_score"][mask]
+            if stage1_values.size > 0:
+                h2 = ROOT.TH2D(
+                    f"DNN_vs_Stage1_Score_{pname}_m{para_masspoint}_c{class_idx}",
+                    "",
+                    100,
+                    0,
+                    1,
+                    100,
+                    0,
+                    1,
+                )
 
-            for dnn, stage1 in zip(pred[mask], feature_values["stage1_score"][mask]):
-                # If stage1 is an array, take first entry
-                if isinstance(stage1, np.ndarray):
-                    stage1 = stage1[0]
-                h2.Fill(dnn, stage1)
+                for dnn, stage1 in zip(pred[mask], stage1_values):
+                    # If stage1 is an array, take first entry
+                    if isinstance(stage1, np.ndarray):
+                        stage1 = stage1[0]
+                    h2.Fill(dnn, stage1)
 
-            dir2d.WriteObject(
-                h2,
-                f"DNN_vs_Stage1_Score_{pname}_m{para_masspoint}_class{class_idx}",
-            )
+                dir2d.WriteObject(
+                    h2,
+                    f"DNN_vs_Stage1_Score_{pname}_m{para_masspoint}_class{setup['class_names'][class_idx]}",
+                )
 
         ROOTOut.cd()
 
@@ -2135,6 +1671,21 @@ def plot_roc(ax, y_true, pred, weights, label):
         ax=ax,
         name=label,
     )
+    return display
+
+
+def plot_confusion_matrix(ax, y_true, y_pred, labels, sample_weight=None, normalize="true", title=None):
+    display = sklearn.metrics.ConfusionMatrixDisplay.from_predictions(
+        y_true,
+        y_pred,
+        labels=labels,
+        sample_weight=sample_weight,
+        normalize=normalize,
+        ax=ax,
+        cmap="Blues",
+    )
+    if title is not None:
+        ax.set_title(title)
     return display
 
 
@@ -2227,6 +1778,9 @@ def validate_dnn_pipeline(
 
     os.makedirs(output_folder, exist_ok=True)
 
+    if not setup.get("class_names", False):
+        setup["class_names"] = [f"Class_{i}" for i in class_labels]
+
     sess1, config = load_model_and_config(model_stage1, model_config)
 
     sess2 = None
@@ -2258,41 +1812,10 @@ def validate_dnn_pipeline(
                 else None
             )
 
-            ROOTOut_raw = ROOT.TFile(
-                os.path.join(
-                    output_folder, f"validation_raw_{cat}{hme_cut_string}.root"
-                ),
-                "RECREATE",
-            )
-
-            ROOTOut2_raw = (
-                ROOT.TFile(
-                    os.path.join(output_folder, f"validation_raw_{cat}_stage2.root"),
-                    "RECREATE",
-                )
-                if sess2
-                else None
-            )
-
-            ROOTOut_logit = ROOT.TFile(
-                os.path.join(
-                    output_folder, f"validation_logit_{cat}{hme_cut_string}.root"
-                ),
-                "RECREATE",
-            )
-
-            ROOTOut2_logit = (
-                ROOT.TFile(
-                    os.path.join(output_folder, f"validation_logit_{cat}_stage2.root"),
-                    "RECREATE",
-                )
-                if sess2
-                else None
-            )
 
             for mass in config["parametric_list"]:
 
-                print(f"{cat} mass {mass}")
+                print(f"{cat} mass {mass} hme cut {hme_cut}")
 
                 if dw.use_parametric:
                     dw.SetPredictParamValue(mass)
@@ -2301,7 +1824,7 @@ def validate_dnn_pipeline(
 
                 preds1 = get_scores(sess1, X)
                 mask_dict, w = build_event_masks(
-                    dw, hme_values, cat, mass, hme_cut=hme_cut
+                    dw, hme_values, cat, mass, setup, hme_cut=hme_cut
                 )
 
                 if np.sum(w) == 0:
@@ -2328,36 +1851,8 @@ def validate_dnn_pipeline(
                         mass,
                         cat,
                         class_idx=c,
-                        bin_format="quantile",
                     )
 
-                    write_root_outputs(
-                        ROOTOut_raw,
-                        preds1[:, c],
-                        dw,
-                        mask_dict,
-                        w,
-                        feature_values,
-                        setup,
-                        mass,
-                        cat,
-                        class_idx=c,
-                        bin_format="raw",
-                    )
-
-                    write_root_outputs(
-                        ROOTOut_logit,
-                        preds1[:, c],
-                        dw,
-                        mask_dict,
-                        w,
-                        feature_values,
-                        setup,
-                        mass,
-                        cat,
-                        class_idx=c,
-                        bin_format="logit",
-                    )
 
                 # =================================================
                 # ROC (stage 1)
@@ -2372,19 +1867,47 @@ def validate_dnn_pipeline(
                 plt.close()
 
                 # =========================================================
+                # CONFUSION MATRIX (STAGE 1 MULTICLASS)
+                # =========================================================
+                y_true_labels = np.asarray(dw.class_target, dtype=np.int64)
+                y_pred_labels = np.argmax(preds1, axis=1).astype(np.int64)
+                class_labels = list(range(nClasses))
+                class_names = setup.get(
+                    "class_names", [f"Class_{i}" for i in class_labels]
+                )
+
+                fig, ax = plt.subplots(figsize=(8, 6))
+                plot_confusion_matrix(
+                    ax,
+                    y_true_labels,
+                    y_pred_labels,
+                    labels=class_labels,
+                    sample_weight=np.clip(w, 0, None),
+                    normalize="true",
+                    title=f"Stage1 Confusion Matrix {cat} m{mass}",
+                )
+                ax.set_xticks(class_labels)
+                ax.set_xticklabels(class_names, rotation=45, ha="right")
+                ax.set_yticks(class_labels)
+                ax.set_yticklabels(class_names)
+                fig.tight_layout()
+                plt.savefig(os.path.join(output_folder, f"ConfusionMatrix_{cat}_{mass}.pdf"))
+                plt.close()
+
+                # =========================================================
                 # FEATURE IMPORTANCE (STAGE-1 BASELINE)
                 # =========================================================
 
-                print(
-                    f"[INFO] Running stage-1 feature importance for {cat} mass {mass}"
-                )
+                # print(
+                #     f"[INFO] Running stage-1 feature importance for {cat} mass {mass}"
+                # )
 
-                y_true = (dw.class_target == 0).astype(int)
+                # y_true = (dw.class_target == 0).astype(int)
 
-                feature_names = (setup["features"]).copy()
-                feature_importance_folder = os.path.join(
-                    output_folder, "feature_importance"
-                )
+                # feature_names = (setup["features"]).copy()
+                # feature_importance_folder = os.path.join(
+                #     output_folder, "feature_importance"
+                # )
                 # feature_importance_scan(
                 #     sess1, X, y_true, w, cat, mass, feature_names, output_folder
                 # )

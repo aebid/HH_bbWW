@@ -29,10 +29,10 @@ log_variables = [
     # "bjet1_mass",
     # "bjet2_pt",
     # "bjet2_mass",
-    # "other_jet1_pt",
-    # "other_jet1_mass",
-    # "other_jet2_pt",
-    # "other_jet2_mass",
+    # "wjet1_pt",
+    # "wjet1_mass",
+    # "wjet2_pt",
+    # "wjet2_mass",
     # "fatbjet_pt",
     # "fatbjet_mass_PNetCorr",
     # "DoubleLep_DeepHME_mass",
@@ -44,10 +44,10 @@ def add_extra_vars(rdf_tmp, class_value, X_mass):
     rdf_tmp = rdf_tmp.Define("X_mass", f"{X_mass}")
     rdf_tmp = rdf_tmp.Define("lep1_legType", "int(channelId/10.0)")
     rdf_tmp = rdf_tmp.Define("lep2_legType", "int(channelId%10)")
-    rdf_tmp = rdf_tmp.Define(
-        "DoubleLep_DeepHME_mass_error_rel",
-        "float(DoubleLep_DeepHME_mass_error)/float(DoubleLep_DeepHME_mass)",
-    )
+    # rdf_tmp = rdf_tmp.Define(
+    #     "DoubleLep_DeepHME_mass_error_rel",
+    #     "float(DoubleLep_DeepHME_mass_error)/float(DoubleLep_DeepHME_mass)",
+    # )
     rdf_tmp = rdf_tmp.Define(
         "b1_p4",
         f"ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(bjet1_pt, bjet1_eta, bjet1_phi, bjet1_mass)",
@@ -58,11 +58,11 @@ def add_extra_vars(rdf_tmp, class_value, X_mass):
     )
     rdf_tmp = rdf_tmp.Define(
         "j1_p4",
-        f"ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(other_jet1_pt, other_jet1_eta, other_jet1_phi, other_jet1_mass)",
+        f"ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(wjet1_pt, wjet1_eta, wjet1_phi, wjet1_mass)",
     )
     rdf_tmp = rdf_tmp.Define(
         "j2_p4",
-        f"ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(other_jet2_pt, other_jet2_eta, other_jet2_phi, other_jet2_mass)",
+        f"ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<double>>(wjet2_pt, wjet2_eta, wjet2_phi, wjet2_mass)",
     )
     rdf_tmp = rdf_tmp.Define(
         "fatjet_p4",
@@ -250,8 +250,11 @@ def measure_cut_datasets(config_dict, output_folder, remote=False):
                     "total_cut_weighted"
                 ] = weighted_cut
 
-                rdf_tmp, cols_to_save = add_extra_vars(rdf_tmp, class_value, X_mass)
-                rdf_tmp.Snapshot(treeName, output_file, cols_to_save)
+                # rdf_tmp, cols_to_save = add_extra_vars(rdf_tmp, class_value, X_mass)
+                # rdf_tmp.Snapshot(treeName, output_file, cols_to_save)
+                rdf_tmp = rdf_tmp.Define("class_value", f"{class_value}")
+                rdf_tmp = rdf_tmp.Define("X_mass", f"{X_mass}")
+                rdf_tmp.Snapshot(treeName, output_file)
 
     for background_name in background_list:
         background_dict = config_dict["background"][background_name]
@@ -295,8 +298,11 @@ def measure_cut_datasets(config_dict, output_folder, remote=False):
                     "total_cut_weighted"
                 ] = weighted_cut
 
-                rdf_tmp, cols_to_save = add_extra_vars(rdf_tmp, class_value, X_mass)
-                rdf_tmp.Snapshot(treeName, output_file, cols_to_save)
+                # rdf_tmp, cols_to_save = add_extra_vars(rdf_tmp, class_value, X_mass)
+                # rdf_tmp.Snapshot(treeName, output_file, cols_to_save)
+                rdf_tmp = rdf_tmp.Define("class_value", f"{class_value}")
+                rdf_tmp = rdf_tmp.Define("X_mass", f"{X_mass}")
+                rdf_tmp.Snapshot(treeName, output_file)
 
     for nParity in range(config_dict["nParity"]):
         nParity_string = f"nParity_{nParity}"
@@ -453,93 +459,76 @@ def input_feature_plots(output_folder):
 
     input_features = set(
         [
+            "nExtraLeps",
+            "nExtraTau",
             "lep1_pt",
             "lep2_pt",
+
             "PuppiMET_pt",
+
             "HT",
+
             "MT",
             "MT2_ll",
             "MT2_bb",
             "MT2_blbl",
             "MT2_blbl2",
+            "total_MT",
+            "lep1_MT",
+            "lep2_MT",
+
             "ll_mass",
+            "ll_pt",
+
             "bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino",
-            "pt_ll",
-            "pt_bb",
-            "m_llmet",
-            "m_bbllmet",
+            "bb_pt",
+            "bb_mass",
+
+            "llmet_mass",
+            "bbllmet_mass",
+
             "bjet1_pt",
             "bjet1_mass",
             "bjet2_pt",
             "bjet2_mass",
-            # "m_b1l1", "m_b1l2", "m_b2l1", "m_b2l2",
-            # "dR_b1l1", "dR_b1l2", "dR_b2l1", "dR_b2l2",
-            "other_jet1_pt",
-            "other_jet1_mass",
-            "other_jet2_pt",
-            "other_jet2_mass",
+
+            "wjet1_pt",
+            "wjet1_mass",
+            "wjet2_pt",
+            "wjet2_mass",
+
             "fatbjet_pt",
             "fatbjet_mass_PNetCorr",
             "fatbjet_particleNetWithMass_HbbvsQCD",
-            "dR_dilep",
-            "dR_dibjet",
-            "dR_dilep_dibjet",
-            "dPhi_MET_dilep",
-            "dPhi_MET_dibjet",
-            "DoubleLep_DeepHME_mass",
-            "dR_b1leps",
-            "dR_b2leps",
-            "m_b1leps",
-            "m_b2leps",
-            "lep1_E",
-            "lep1_px",
-            "lep1_py",
-            "lep1_pz",
-            "lep2_E",
-            "lep2_px",
-            "lep2_py",
-            "lep2_pz",
-            "bjet1_E",
-            "bjet1_px",
-            "bjet1_py",
-            "bjet1_pz",
-            "bjet2_E",
-            "bjet2_px",
-            "bjet2_py",
-            "bjet2_pz",
-            "jet3_E",
-            "jet3_px",
-            "jet3_py",
-            "jet3_pz",
-            "jet4_E",
-            "jet4_px",
-            "jet4_py",
-            "jet4_pz",
-            "fatjet_E",
-            "fatjet_px",
-            "fatjet_py",
-            "fatjet_pz",
-            "met_E",
-            "met_px",
-            "met_py",
-            "met_pz",
+
+            "ll_dR",
+            "bb_dR",
+            "ll_bb_dR",
+            "met_ll_dphi",
+            "met_bb_dphi",
+
+            "DeepHME_mass",
+
             "bjet1_btagPNetB",
             "bjet2_btagPNetB",
+
             "fatbjet_tau1",
             "fatbjet_tau2",
             "fatbjet_tau3",
             "fatbjet_tau4",
-            "CosTheta_bb",
-            "dR_dilep_dijet",
             "fatbjet_msoftdrop",
-            "dPhi_jet1_jet2",
-            "dPhi_lep1_lep2",
+
+            "bb_CosTheta",
+
+            "ll_jj_dR",
+            "ll_dphi",
+            "bb_dphi",
         ]
     )
     base_branches = set(["class_value", "X_mass", "weight_Central"])
     branches_to_load = list(input_features | base_branches)
 
-    class_names = ["Signal", "TT", "DY", "Other"]
+    class_names = ["Signal", "TT", "DY", "ST", "SMHiggs", "VV", "Other"]
 
     for inName in inNames:
         if "weight" in inName:
@@ -576,7 +565,7 @@ def input_feature_plots(output_folder):
                         plt.hist(
                             feature_values[sig_mask],
                             bins=50,
-                            # weights=weights[mask],
+                            weights=weights[sig_mask],
                             alpha=0.5,
                             label=f"{class_plot_name} m{x_mass}",
                             # Normalize to 1 for better comparison of shapes
@@ -590,7 +579,7 @@ def input_feature_plots(output_folder):
                     plt.hist(
                         feature_values[mask],
                         bins=50,
-                        # weights=weights[mask],
+                        weights=weights[mask],
                         alpha=0.5,
                         label=f"{class_plot_name}",
                         # Normalize to 1 for better comparison of shapes
@@ -642,7 +631,7 @@ if __name__ == "__main__":
 
     measure_cut_datasets(config_dict, output_folder)
     hadd_files(config_dict, output_folder)
-    # add_weight_file(output_folder) # Option for all masses
+    add_weight_file(output_folder) # Option for all masses
     for mass in config_dict["signal"]["XtoYHto2B2W"]["mass_points"]:
         print(f"Starting mass {mass}")
         add_weight_file(output_folder, mass=mass)

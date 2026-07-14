@@ -8,7 +8,7 @@ shapes * res2b run3_res2b.root m$MASS_$PROCESS
 bin             res2b           
 observation     -1              
 bin             res2b           res2b           res2b           res2b           
-process         signal          TT              fit_DY              Other
+process         signal          TT              DY          Other
 process         0               1               2               3  
 rate            -1              -1              -1              -1
 --------------------------------------------------------------------------------

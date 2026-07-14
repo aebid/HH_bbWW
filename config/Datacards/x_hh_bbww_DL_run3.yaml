@@ -3,55 +3,49 @@ type: resonant
 model:
   parameters: [ MX ]
   param_dependent_bkg: true
-  # input_file_pattern: dnn_M${MX}_Signal/dnn_M${MX}_Signal.root
-  # input_file_pattern: dnn_M0_Signal/dnn_M0_Signal.root
-  # input_file_pattern: LinHMEDNN_DL_linear_hme_dnn_m${MX}/LinHMEDNN_DL_linear_hme_dnn_m${MX}.root
-  input_file_pattern: DL_DNN_m${MX}_vs_HME/DL_DNN_m${MX}_vs_HME.root
-# hist_bins: [ 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 1 ]
-# hist_bins: [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4, 1.45, 1.5, 1.55, 1.6, 1.65, 1.7, 1.75, 1.8, 1.85, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4, 2.45, 2.5, 2.55, 2.6, 2.65, 2.7, 2.75, 2.8, 2.85, 2.9, 2.95, 3.0, 3.05, 3.1, 3.15, 3.2, 3.25, 3.3, 3.35, 3.4, 3.45, 3.5, 3.55, 3.6, 3.65, 3.7, 3.75, 3.8, 3.85, 3.9, 3.95, 4.0, 4.05, 4.1, 4.15, 4.2, 4.25, 4.3, 4.35, 4.4, 4.45, 4.5, 4.55, 4.6, 4.65, 4.7, 4.75, 4.8, 4.85, 4.9, 4.95, 5.0]
-# hist_bins: [ -10.0, 241.0, 266.1, 316.3, 391.6, 441.8, 492.0, 542.2, 617.5, 667.7, 743.0, 868.5, 994.0, 2500.0 ] # HME Bins
+  input_file_pattern: ${ERA}/DNN_m${MX}_vs_HME/DNN_m${MX}_vs_HME.root
+  # param_dependent_bkg: false
+  # input_file_pattern: ${ERA}/DeepHME_mass/DeepHME_mass.root
+hist_bins: [250.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0, 900.0, 1000.0, 1500.0, 2500.0]
 signalFractionForRelevantBins: 0.2
 eras:
   # - Run3_2022
-  - Run3_2022EE
+  # - Run3_2022EE
   # - Run3_2023
   # - Run3_2023BPix
+  - Early_Run3
+
+era_groups:
+  Early_Run3:
+    - Run3_2022
+    - Run3_2023
+
 channels:
   - muMu
   - eMu
   - eE
 categories:
-  - ZVeto_OS_Iso/res2b
-  - ZVeto_OS_Iso/boosted
-  - ZVeto_OS_Iso/recovery
+  - SR_mbb/res2b
+  - OS_Iso/boosted
+  - SR_mbb/recovery
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
-  - process: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
-    hist_name: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
-    # param_values: [ 250, 260, 270, 280, 300, 350, 450, 550, 600, 650, 700, 800 ]
-    # param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
-    # param_values: [ 600 ]
+  - process: XtoHHto2B2W_2L_${MX}
+    hist_name: XtoHHto2B2W_2L_${MX}
+    param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
     is_signal: true
-    # 125.0 H->bb BR 5.824e-01 https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR
-    # 125.0 H->WW BR 2.137e-01
-    # 125.0 H->ZZ BR 2.619e-02
-    # W->lv 10.86e-02 https://pdg.lbl.gov/2019/listings/rpp2019-list-w-boson.pdf
-    # W->hadrons BR 67.41e-02 (1 - 3 * 10.86e-02)
-    # Z->ll 3.3658e-02
-    # Z->invisible 20e-02
-    # scale: 2 * 5.824e-01 * ( 2.137e-01 * 3 * 10.86e-02 * 3 * 10.86e-02 + 2 * 2.619E-02 * 3 * 3.3658e-02 * 20e-02)
-    # XtoHHto2B2W forces W decay, not allowing Zs
-    scale: 2 * 5.824e-01 * ( 2.137e-01 * 3 * 10.86e-02 * 3 * 10.86e-02)
   - TT
   - process: DY
     channels:
       - eE
       - muMu
+    # allow_negative_bins_within_error: true
+    allow_zero_integral: true
     # categories:
-    #   - ZVeto_OS_Iso/res2b
-    #   - ZVeto_OS_Iso/recovery
+    #   - SR/res2b
+    #   - SR/recovery
   - process: VV
     allow_negative_bins_within_error: true
     allow_zero_integral: true
@@ -63,11 +57,22 @@ uncertainties:
     type: lnN
     value: 0.014 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
 
-
-  # - name: MuonID_TightID
+  # Example of an era-dependent lnN unc
+  # - name: lumi_13p6TeV
+  #   hasMultipleValues: True
+  #   type: lnN
+  #   value:
+  #     - value: 0.001
+  #       type: lnN
+  #       eras:
+  #         - Run3_2022
+  #     - value: 0.1
+  #       type: lnN
+  #       eras:
+  #         - Run3_2023
+          
   - name: CMS_eff_m_id
     type: shape
-  # - name: MuonID_TightIDIso
   - name: CMS_eff_m_id_iso
     type: shape
   - name: EleID_TightIDIso
@@ -78,23 +83,6 @@ uncertainties:
   - name: SingleMuonTrg
     type: shape
 
-  # - name: CMS_pileup_2022
-  #   type: shape
-  #   eras:
-  #     - Run3_2022
-  # - name: CMS_pileup_2022EE
-  #   type: shape
-  #   eras:
-  #     - Run3_2022EE
-  # - name: CMS_pileup_2023
-  #   type: shape
-  #   eras:
-  #     - Run3_2023
-  # - name: CMS_pileup_2023BPix
-  #   type: shape
-  #   eras:
-  #     - Run3_2023BPix
-
   - name: CMS_pileup
     type: shape
 
@@ -104,7 +92,6 @@ uncertainties:
     type: shape
   - name: CMS_scale_e
     type: shape
-
 
   # For multiple values, Konstantin says do [ down, up ]
   - name: QCD_scale_TT

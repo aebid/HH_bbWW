@@ -5,73 +5,80 @@ batch_size: 10000
 dropout: 0.2
 features:
   - lep1_pt
-  # - lep1_pt_log
-  - lep1_phi
-  - lep1_eta
-  - lep1_legType
+  # - lep1_phi
+  # - lep1_eta
+  # - lep1_legType # Change to type
+
   - lep2_pt
-  # - lep2_pt_log
-  - lep2_phi
-  - lep2_eta
-  - lep2_legType
+  # - lep2_phi
+  # - lep2_eta
+  # - lep2_legType
+
   - PuppiMET_pt
-  # - PuppiMET_pt_log
-  - PuppiMET_phi
+  # - PuppiMET_phi
+
   - HT
-  # - HT_log
-  - dR_dilep
-  - dR_dibjet
-  - dR_dilep_dibjet
-  - dR_dilep_dijet
-  - dPhi_lep1_lep2
-  - dPhi_jet1_jet2
-  - dPhi_MET_dilep
-  - dPhi_MET_dibjet
-  - MT
+
+  - ll_dR
+  - bb_dR
+  - ll_bb_dR
+
+  - ll_dphi
+  - bb_dphi
+
+  - met_ll_dphi
+  - met_bb_dphi
+
+  # - MT
+  - total_MT
+  - lep1_MT
+  - lep2_MT
   - MT2_ll
   - MT2_bb
   - MT2_blbl
   - MT2_blbl2
-  # - MT_log
-  # - MT2_ll_log
-  # - MT2_bb_log
-  # - MT2_blbl_log
-  # - MT2_blbl2_log
+
   - ll_mass
-  # - ll_mass_log
-  - CosTheta_bb
+  - bb_mass
+  - llmet_mass
+  - bbllmet_mass
+
+  - bb_CosTheta
+
   - bjet1_pt
-  # - bjet1_pt_log
-  - bjet1_phi
-  - bjet1_eta
+  # - bjet1_phi
+  # - bjet1_eta
   - bjet1_mass
-  # - bjet1_mass_log
   - bjet1_btagPNetB
+
   - bjet2_pt
-  # - bjet2_pt_log
-  - bjet2_phi
-  - bjet2_eta
+  # - bjet2_phi
+  # - bjet2_eta
   - bjet2_mass
-  # - bjet2_mass_log
   - bjet2_btagPNetB
-  - other_jet1_pt
-  # - other_jet1_pt_log
-  - other_jet1_phi
-  - other_jet1_eta
-  - other_jet1_mass
-  # - other_jet1_mass_log
-  - other_jet1_btagPNetB
-  - other_jet2_pt
-  # - other_jet2_pt_log
-  - other_jet2_phi
-  - other_jet2_eta
-  - other_jet2_mass
-  # - other_jet2_mass_log
-  - other_jet2_btagPNetB
+
+  # - fatbjet_pt
+  # - fatbjet_phi
+  # - fatbjet_eta
+  # - fatbjet_mass_PNetCorr
+
+  # - fatbjet_tau1
+  # - fatbjet_tau2
+  # - fatbjet_tau3
+  # - fatbjet_tau4
+  # - fatbjet_msoftdrop
+  # - fatbjet_neMultiplicity
+  # - fatbjet_neHEF
+  # - fatbjet_nConstituents
+  # - fatbjet_muEF
+  # - fatbjet_neEmEF
+
+  # - nExtraLeps
+  # - nExtraTau
 
   # - DoubleLep_DeepHME_mass
   # - DoubleLep_DeepHME_mass_log
-  # - DoubleLep_DeepHME_mass_error_rel
+  # - DoubleLep_DeepHME_mass_error_rel # Relative error (error/mass)
 
   # - channelId
 gamma1: 2

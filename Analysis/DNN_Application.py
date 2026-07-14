@@ -25,10 +25,13 @@ class DNNProducer:
 
         load_features = set()
         columns_to_save = set()
+        self.classes_to_save = set()
 
         self.cfg_dict = {
-            "DL": self.cfg.get("DL", None),
-            "SL": self.cfg.get("SL", None),
+            "DL_Resolved": self.cfg.get("DL_Resolved", None),
+            "DL_Boosted": self.cfg.get("DL_Boosted", None),
+            "SL_Resolved": self.cfg.get("SL_Resolved", None),
+            "SL_Boosted": self.cfg.get("SL_Boosted", None),
         }
 
         self.models = {}
@@ -61,6 +64,7 @@ class DNNProducer:
                     self.dnnConfig[channel][f"m{mass}"] = yaml.safe_load(file)
 
                 load_features.update(self.dnnConfig[channel][f"m{mass}"]["features"])
+                self.classes_to_save.update(self.dnnConfig[channel][f"m{mass}"]["class_names"])
 
                 modelname_parity = self.dnnConfig[channel][f"m{mass}"][
                     "modelname_parity"
@@ -75,8 +79,10 @@ class DNNProducer:
         )
 
         # What to save in tmp file
-        load_features.update(["FullEventId", "event", "SL", "DL"])
+        load_features.update(["FullEventId", "event", "SL", "DL", "boosted"])
         self.vars_to_save = load_features
+
+        print(f"Initialized with these classes to save {self.classes_to_save}")
 
     def run(self, array):
         print("Running DNN producer")
@@ -207,6 +213,7 @@ class DNNProducer:
 
         for field_name, values in output_fields.items():
             branches[field_name] = values
+            print(f"Added field {field_name}")
 
         del output_fields
 
@@ -216,20 +223,32 @@ class DNNProducer:
         # Here we will take SL and DL and choose which branch to save as final column
         output_fields = {}
 
-        classes_to_save = ["Signal", "TT", "DY", "ST"]
+        # classes_to_save = ["Signal", "TT", "DY", "ST"]
 
         for mass in self.masses:
-            for class_name in classes_to_save:
+            for class_name in self.classes_to_save:
                 field_name = f"M{mass}_{class_name}"
                 # Build the empty branches with ones
-                if f"SL_{field_name}" not in branches.fields:
-                    branches[f"SL_{field_name}"] = np.zeros_like(branches.event)
-                if f"DL_{field_name}" not in branches.fields:
-                    branches[f"DL_{field_name}"] = np.zeros_like(branches.event)
+                if f"SL_Resolved_{field_name}" not in branches.fields:
+                    branches[f"SL_Resolved_{field_name}"] = np.zeros_like(branches.event)
+                if f"SL_Boosted_{field_name}" not in branches.fields:
+                    branches[f"SL_Boosted_{field_name}"] = np.zeros_like(branches.event)
+                if f"DL_Resolved_{field_name}" not in branches.fields:
+                    branches[f"DL_Resolved_{field_name}"] = np.zeros_like(branches.event)
+                if f"DL_Boosted_{field_name}" not in branches.fields:
+                    branches[f"DL_Boosted_{field_name}"] = np.zeros_like(branches.event)
                 output_fields[field_name] = np.where(
                     branches.SL,
-                    branches[f"SL_{field_name}"],
-                    branches[f"DL_{field_name}"],
+                    np.where(
+                        branches.boosted,
+                        branches[f"SL_Boosted_{field_name}"],
+                        branches[f"SL_Resolved_{field_name}"],
+                    ),
+                    np.where(
+                        branches.boosted,
+                        branches[f"DL_Boosted_{field_name}"],
+                        branches[f"DL_Resolved_{field_name}"],
+                    ),
                 )
 
         for field_name, values in output_fields.items():

@@ -13,6 +13,7 @@ Run3_Model:
     - XtoHHto2B2W_DoubleLepton
     # - XtoHHto2B2Tau # 2023 is missing some 2B2Tau masses
     - XtoHHto2Tau2B
+    # - GluGluToRadion_DoubleLepton
   data:
     - Data_Full
 

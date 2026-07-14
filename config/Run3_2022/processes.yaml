@@ -346,7 +346,7 @@ XtoHHto2B2W_DoubleLepton:
     dataset_name_pattern: XtoYHto2B2Wto2B2L2Nu_MX_(\d+)_MY_125
     parameters: [ MASS ]
     process_name: XtoHHto2B2W_2L_${MASS}
-    name_pattern: Xto2B2W 2L ${MASS} GeV (x100)
+    name_pattern: Xto2B2W 2L ${MASS} GeV (x1000)
     to_plot:
       - [ '300' ]
       - [ '600' ]
@@ -382,7 +382,7 @@ XtoHHto2B2W_SingleLepton:
     dataset_name_pattern: XtoYHto2B2Wto2B2Q1L1Nu_MX_(\d+)_MY_125
     parameters: [ MASS ]
     process_name: XtoHHto2B2W_1L_${MASS}
-    name_pattern: Xto2B2W 1L ${MASS} GeV (x100)
+    name_pattern: Xto2B2W 1L ${MASS} GeV (x1000)
     to_plot:
       - [ '300' ]
       - [ '600' ]
@@ -418,7 +418,7 @@ XtoHHto2B2Tau:
     dataset_name_pattern: XtoYHto2B2Tau_MX_(\d+)_MY_125
     parameters: [ MASS ]
     process_name: XtoHHto2B2Tau_${MASS}
-    name_pattern: Xto2B2Tau ${MASS} GeV (x50)
+    name_pattern: Xto2B2Tau ${MASS} GeV (x1000)
     to_plot:
       - [ '300' ]
       - [ '600' ]
@@ -454,7 +454,7 @@ XtoHHto2Tau2B:
     dataset_name_pattern: XtoYHto2Tau2B_MX_(\d+)_MY_125
     parameters: [ MASS ]
     process_name: XtoHHto2Tau2B_${MASS}
-    name_pattern: Xto2Tau2B ${MASS} GeV (x50)
+    name_pattern: Xto2Tau2B ${MASS} GeV (x1000)
     to_plot:
       - [ '300' ]
       - [ '600' ]
@@ -616,7 +616,7 @@ custom_CI_Signal:
     dataset_name_pattern: XtoYHto2B2Wto2B2L2Nu_MX_(\d+)_MY_125
     parameters: [ MASS ]
     process_name: XtoHHto2B2W_2L_${MASS}
-    name_pattern: Xto2B2W 2L ${MASS} GeV (x100)
+    name_pattern: Xto2B2W 2L ${MASS} GeV (x1000)
     to_plot:
       - [ '300' ]
     plot_color: [ "kBlack" ]

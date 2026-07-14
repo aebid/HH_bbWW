@@ -19,11 +19,11 @@ cmssw_env = get_cmsenv(cmssw_path=os.getenv("FLAF_CMSSW_BASE"))
 
 
 def hadd_parity_files(
-    filepath_resolved, filepath_boosted, histname, masslist, catlist, output_dir
+    filepath_resolved, filepath_boosted, histname, masslist, catlist, output_dir, bkg_list
 ):
     # For each mass, load the validaiton files for each parity and combine all background into one distribution and signal into another distribution. Then make a plot of the two distributions and save it to disk.
 
-    bkg_list = ["TT", "DY", "Other"]
+    # bkg_list = ["TT", "DY", "ST", "SMHiggs", "VV", "Other"]
     sig_list = ["Signal"]
 
     os.makedirs(output_dir, exist_ok=True)
@@ -167,7 +167,7 @@ def hadd_parity_files(
     return output_filepath
 
 
-def fit_hadded_shapes(filepath, masslist, catlist, output_dir):
+def fit_hadded_shapes(filepath, masslist, catlist, output_dir, bkg_list):
     # load the hadd_m{mass}_{cat}.root files, load the background distribution, and create a fit
 
     # Set minimizer to MINUIT2
@@ -182,7 +182,8 @@ def fit_hadded_shapes(filepath, masslist, catlist, output_dir):
     # fit_option = "crystal_ball_expo"
     fit_option = "crystal_ball_gaus"
 
-    hists_to_fit = ["background", "DY", "TT", "Other", "signal"]
+    hists_to_fit = [ "signal", "background" ] + bkg_list
+    # hists_to_fit = ["background", "TT", "DY", "ST", "SMHiggs", "VV", "Other", "signal"]
 
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, "plots"), exist_ok=True)
@@ -488,11 +489,19 @@ def fit_hadded_shapes(filepath, masslist, catlist, output_dir):
                 fit_hist.SetName("fit_hist")
                 fit_hist.SetTitle("Fit histogram")
                 for i in range(1, fit_hist.GetNbinsX() + 1):
-                    x = fit_hist.GetXaxis().GetBinCenter(i)
-                    fit_hist.SetBinContent(i, fit.Eval(x))
-                    fit_hist.SetBinError(
-                        i, 0.2 * fit.Eval(x)
-                    )  # Set the error to 70% of the fit value for visualization purposes
+                    x_low = fit_hist.GetXaxis().GetBinLowEdge(i)
+                    x_high = fit_hist.GetXaxis().GetBinUpEdge(i)
+                    bin_width = x_high - x_low
+                    
+                    # Integrate the fit function over the bin
+                    # Using the Integral method of TF1
+                    integral = fit.Integral(x_low, x_high)
+                    
+                    # For histogram, we want density * width = integral
+                    # So bin content = integral / bin_width * bin_width = integral
+                    fit_hist.SetBinContent(i, integral)
+                    fit_hist.SetBinError(i, 0.2 * integral)  # Adjust error accordingly
+                    # Set the error to 70% of the fit value for visualization purposes
                 # Save the fit histogram and the original histogram to a new root file
                 hist.Write(f"Original_{histname}")
                 fit_hist.Write(f"fit_{histname}")
@@ -524,19 +533,23 @@ def fit_hadded_shapes(filepath, masslist, catlist, output_dir):
     return output_filepath
 
 
-def combine_shapes(filepath, masslist, catlist, output_dir):
+def combine_shapes(filepath, masslist, catlist, output_dir, bkg_list):
     # Load all shapes in fit_outputs and combine into a single file, with new naming scheme m{mass}_{histName} for hists
 
-    hists_to_combine = [
-        "background",
-        "DY",
-        "TT",
-        "Other",
-        "signal",
-        "fit_DY",
-        "fit_background",
-        "data_obs",
-    ]
+    hists_to_combine = [ "signal", "background", "fit_DY", "fit_background", "data_obs" ] + bkg_list
+    # hists_to_combine = [
+    #     "background",
+    #     "DY",
+    #     "TT",
+    #     "ST",
+    #     "SMHiggs",
+    #     "VV",
+    #     "Other",
+    #     "signal",
+    #     "fit_DY",
+    #     "fit_background",
+    #     "data_obs",
+    # ]
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -561,6 +574,7 @@ def combine_shapes(filepath, masslist, catlist, output_dir):
                     continue
 
                 # Clone the histogram to keep it valid after closing the file
+                print(f"Cloning {histname} from file {file_name}")
                 hist = hist.Clone()
                 hist.SetName(f"m{mass}_{histname}")
                 if histname == "data_obs":
@@ -581,6 +595,7 @@ def rebin_shapes(
     output_dir,
     bkgs_to_consider_resolved,
     bkgs_to_consider_boosted,
+    bkg_list,
     nTotalBins=None,
 ):
     import array
@@ -588,15 +603,19 @@ def rebin_shapes(
     os.makedirs(output_dir, exist_ok=True)
 
     # histograms to carry through into rebinned output
-    rebin_hist_names = [
-        "background",
-        "DY",
-        "TT",
-        "Other",
-        "signal",
-        "fit_DY",
-        "fit_background",
-    ]
+    rebin_hist_names = [ "signal", "background", "fit_DY", "fit_background" ] + bkg_list
+    # rebin_hist_names = [
+    #     "background",
+    #     "DY",
+    #     "TT",
+    #     "ST",
+    #     "SMHiggs",
+    #     "VV",
+    #     "Other",
+    #     "signal",
+    #     "fit_DY",
+    #     "fit_background",
+    # ]
 
     output_filepath = os.path.join(output_dir, "rebin_combined_shapes_{cat}.root")
 
@@ -1206,20 +1225,36 @@ def plot_limits_from_json(json_dir, masslist, catlist, output_dir, draw_observed
 
 def prepare_shapes():
     # training_dir_resolved = "/eos/user/d/daebi/HH_bbWW/DNNTraining/25Apr_Resolved_v1_Logits/Run3_2022EE/DNN_DoubleLepton_Resolved_Training0_par{par}_m{mass}"
-    training_dir_resolved = "/eos/user/d/daebi/HH_bbWW/DNNTraining/5May_Resolved_v1/Run3_2022EE/DNN_DoubleLepton_Resolved_Training0_par{par}_m{mass}"
+    training_dir_resolved = "/eos/user/d/daebi/HH_bbWW/DNNTraining/23May_Resolved_v1/Run3_2022EE/DNN_DoubleLepton_Resolved_Training0_par{par}_m{mass}"
     training_dir_boosted = "/eos/user/d/daebi/HH_bbWW/DNNTraining/9May_Boosted_v1/Run3_2022EE/DNN_DoubleLepton_Boosted_Training0_par{par}_m{mass}"
 
-    catlist = ["res2b", "res1b", "boosted"]
-    output_dir = "LocalLimits/5May_Resolved_9May_Boosted_FitResults_20Bins"
+    # training_dir_resolved = "/eos/user/d/daebi/HH_bbWW/DNNTraining/training_v4/Run3_2022EE/DNN_DoubleLepton_Resolved_Training0_par{par}_m0" # Parametric, all named m0
+
+    # catlist = ["res2b", "res1b", "boosted"]
+    catlist = ["res2b", "res1b" ]
+
+    # all_bkgs = ["TT", "DY", "ST", "SMHiggs", "VV", "Other"]
+    # all_bkgs = ["TT", "DY", "ST", "Other"]
+    all_bkgs = ["TT", "DY", "Other"]
+
+    # bkgs_to_consider_resolved = ["DY", "TT", "ST", "Other"]
+    # bkgs_to_consider_resolved = ["fit_DY", "TT"]
+    bkgs_to_consider_resolved = ["DY", "TT"]
+    bkgs_to_consider_boosted = ["fit_background"]
+
+    # output_dir = "LocalLimits/25Apr_Resolved_9May_Boosted_10Bins_noHME"
+    output_dir = "LocalLimits/23May_Resolved_10Bins_NoFit_noHME"
 
     # Step 1: hadd the separate parity files per mass point
     masslist = [300, 400, 500, 550, 600, 650, 700, 800, 900, 1000]
 
     filepath_resolved = os.path.join(
-        training_dir_resolved, "validation", "validation_logit_{cat}_hme_cut.root"
+        # training_dir_resolved, "validation", "validation_logit_{cat}_hme_cut.root"
+        training_dir_resolved, "validation", "validation_logit_{cat}.root"
     )
     filepath_boosted = os.path.join(
-        training_dir_boosted, "validation", "validation_logit_{cat}_hme_cut.root"
+        # training_dir_boosted, "validation", "validation_logit_{cat}_hme_cut.root"
+        training_dir_boosted, "validation", "validation_logit_{cat}.root"
     )
     histname = "m{mass}_{proc}_class0"
 
@@ -1232,24 +1267,23 @@ def prepare_shapes():
         masslist,
         catlist,
         output_dir_hadd,
+        all_bkgs,
     )
 
     # Step 2: fit the hadded backgrounds and sum(bkg)
     output_dir_fit = os.path.join(output_dir, "fit_outputs")
     fitted_filepath = fit_hadded_shapes(
-        hadded_filepath, masslist, catlist, output_dir_fit
+        hadded_filepath, masslist, catlist, output_dir_fit, all_bkgs
     )
 
     # Step 3: merge into one shape file with correct naming scheme
     output_dir_combined = os.path.join(output_dir, "combined_shapes")
     combined_filepath = combine_shapes(
-        fitted_filepath, masslist, catlist, output_dir_combined
+        fitted_filepath, masslist, catlist, output_dir_combined, all_bkgs
     )
 
     # Step 4: rebin the combined shapes for combine
     output_dir_rebin = os.path.join(output_dir, "rebin_combined_shapes")
-    bkgs_to_consider_resolved = ["fit_DY", "TT", "Other"]
-    bkgs_to_consider_boosted = ["fit_background"]
     rebin_filepath = rebin_shapes(
         combined_filepath,
         masslist,
@@ -1257,7 +1291,8 @@ def prepare_shapes():
         output_dir_rebin,
         bkgs_to_consider_resolved,
         bkgs_to_consider_boosted,
-        20,  # nTotalBins, or none, or comment out
+        all_bkgs,
+        10,  # nTotalBins, or none, or comment out
     )
 
     # Step 5: calculate limits of new shapes

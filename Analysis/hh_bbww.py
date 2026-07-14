@@ -189,6 +189,10 @@ class DataFrameBuilderForHistograms(DataFrameBuilderBase):
         self.DefineAndAppend(
             "WhadCand_isValid", "(wjet1_isValid && wjet2_isValid) || fatwjet_isValid"
         )
+        # Experimental SL where we require only 1 W jet
+        # self.DefineAndAppend(
+        #     "WhadCand_isValid", "(wjet1_isValid || wjet2_isValid) || fatwjet_isValid"
+        # )
         self.DefineAndAppend("inclusive", "HbbCand_isValid && (DL || WhadCand_isValid)")
         self.DefineAndAppend(
             "boosted_H", "inclusive && (fatbjet_isValid && !fatwjet_isValid)"
@@ -203,7 +207,7 @@ class DataFrameBuilderForHistograms(DataFrameBuilderBase):
         self.DefineAndAppend("boosted", "boosted_H || boosted_W || boosted_HW")
         self.DefineAndAppend("resolved", "inclusive && !boosted")
         self.DefineAndAppend("res2b", "resolved && bjet1_isBTagged && bjet2_isBTagged")
-        self.DefineAndAppend("recovery", "resolved && !res2b && bjet1_isBTagged")
+        self.DefineAndAppend("recovery", "resolved && !res2b && bjet1_isBTagged")        
 
     def defineLeptonPreselection(self):
         self.df = self.df.Define(
@@ -580,6 +584,9 @@ def defineJetSelections(df, isData):
     df = df.Define("bjet1_isValid", "(Nbjets > 0)")
     df = df.Define("bjet2_isValid", "(Nbjets > 1)")
 
+    # df = df.Define("bjet1_isBTagged", "bjet1_isValid ? BJet_idbtagPNetB[0] >= 1 : 0")
+    # df = df.Define("bjet2_isBTagged", "bjet2_isValid ? BJet_idbtagPNetB[1] >= 1 : 0")
+    # Experimental, raise to medium BTag
     df = df.Define("bjet1_isBTagged", "bjet1_isValid ? BJet_idbtagPNetB[0] >= 1 : 0")
     df = df.Define("bjet2_isBTagged", "bjet2_isValid ? BJet_idbtagPNetB[1] >= 1 : 0")
     df = df.Define(

@@ -161,10 +161,14 @@ payload_producers:
   DNN:
     producers_module_name: Analysis.DNN_Application
     producer_name: DNNProducer
-    DL:
+    DL_Resolved:
       version: "DoubleLepton_IndependentMasses_v1"
       parametric: False
-    SL: null
+    DL_Boosted:
+      version: "DoubleLepton_IndependentMasses_v1_Boosted"
+      parametric: False
+    SL_Resolved: null
+    SL_Boosted: null
     columns:
       - M300_Signal
       - M400_Signal
@@ -209,6 +213,17 @@ payload_producers:
       - M800_ST
       - M900_ST
       - M1000_ST
+
+      - M300_Background
+      - M400_Background
+      - M500_Background
+      - M550_Background
+      - M600_Background
+      - M650_Background
+      - M700_Background
+      - M800_Background
+      - M900_Background
+      - M1000_Background
     masses:
       - 300
       - 400
@@ -311,7 +326,8 @@ custom_subcategories: [ ]
 
 # Signal overlay scaling in HistPlotTask: a fixed factor (e.g. 100), or "bkg" to
 # normalise each signal's integral to the summed background (shape comparison).
-signal_plot_scale: bkg
+# signal_plot_scale: bkg
+signal_plot_scale: 1000
 
 # This is for Analysis Selection
 channelSelection:
@@ -337,14 +353,14 @@ channelDefinition:
   muMu: 22
 
 categories:
-  - inclusive
+  # - inclusive
   - recovery
   - res2b
   - boosted
   - boosted_H
   - boosted_W
   - boosted_HW
-  - baseline
+  # - baseline
 
 QCDRegions:
   # - OS_Iso
@@ -356,11 +372,11 @@ QCDRegions:
   # - mbbCR_Tight
   # - mbbCR_AntiTight
 
-  - OS_Iso
+  # - OS_Iso
   - SR
-  - TT_CR
-  - DY_CR
-  - W_CR
+  # - TT_CR
+  # - DY_CR
+  # - W_CR
   - SR_mbb
 
 histTuple_selectors:
@@ -404,7 +420,8 @@ scales:
 deepTauVersion: 2p1
 met_type: "PuppiMET"
 
-histTuple_flavor: default
+# histTuple_flavor: default
+histTuple_flavor: DNN_training
 histTuple_flavors:
   DNN_training:
     fullResolution_variables:
@@ -412,11 +429,13 @@ histTuple_flavors:
       - lep1_eta
       - lep1_phi
       - lep1_mass
+      - lep1_legType
 
       - lep2_pt
       - lep2_eta
       - lep2_phi
       - lep2_mass
+      - lep2_legType
 
       - bjet1_pt
       - bjet1_phi
@@ -467,28 +486,42 @@ histTuple_flavors:
       - PuppiMET_pt
       - PuppiMET_phi
 
-      - HT
-      - ll_dR
+      - bb_pt
+      - bb_mass
+      - bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino
       - bb_dR
+      - bb_dphi
+      - bb_deta
+      - bb_CosTheta
+      - bb_ptToE
+
+      - ll_pt
+      - ll_mass
+      - ll_dR
+      - ll_dphi
+
       - ll_bb_dR
       - ll_jj_dR
-      - ll_dphi
       - met_ll_dphi
       - met_bb_dphi
+
+      - llmet_mass
+      - bbllmet_mass
+
+      - HT
+
       - lep1_MT
       - lep2_MT
       - total_MT
+
       - MT
       - MT2_ll
       - MT2_bb
       - MT2_blbl1
       - MT2_blbl2
-      - ll_mass
-      - bb_CosTheta
+
       - nExtraTau
       - nExtraLeps
-
-      - bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino
 
       - DeepHME_mass
       - DeepHME_mass_error
@@ -498,7 +531,6 @@ histTuple_flavors:
       - hadT_mass
       - lepT_mass
       - WW_ptToE
-      - bb_ptToE
       - hadT_pt
       - lepT_pt
       - hadT_constituentPtFrac
@@ -512,10 +544,6 @@ histTuple_flavors:
       - hadW_leadbjet_deta
       - hadW_leadbjet_dR
       - hadW_mass
-      - bb_dphi
-      - bb_deta
-      - bb_pt
-      - bb_mass
       - hadW_lep_dphi
       - hadW_lep_deta
       - hadW_lep_dR
@@ -540,173 +568,183 @@ histTuple_flavors:
       - valid
 
     variables:
-      - DeepHME_mass
+      [ ] # Do not need any binned vars for DNN Training
+      # - DeepHME_mass
+      # - lep1_pt
+
+
+  default:
+    # DNN Inputs
+    fullResolution_variables: [ ]
+
+    variables:
       - lep1_pt
-histTuple_fullResolution_variables: [ ]
+      - lep1_eta
+      - lep1_phi
+      - lep1_mass
 
-# DNN Inputs
-variables:
-  - lep1_pt
-  - lep1_eta
-  - lep1_phi
-  - lep1_mass
+      - name: lep1_pt_vs_eta
+        vars: [ lep1_pt, lep1_eta ]
+        plot_task: False
 
-  - name: lep1_pt_vs_eta
-    vars: [ lep1_pt, lep1_eta ]
-    plot_task: False
+      - lep2_pt
+      - lep2_eta
+      - lep2_phi
+      - lep2_mass
 
-  - lep2_pt
-  - lep2_eta
-  - lep2_phi
-  - lep2_mass
+      - PuppiMET_pt
+      - PuppiMET_phi
 
-  - PuppiMET_pt
-  - PuppiMET_phi
+      - bjet1_pt
+      - bjet1_eta
+      - bjet1_phi
+      - bjet1_mass
+      - bjet1_btagPNetB
 
-  - bjet1_pt
-  - bjet1_eta
-  - bjet1_phi
-  - bjet1_mass
-  - bjet1_btagPNetB
+      - bjet2_pt
+      - bjet2_eta
+      - bjet2_phi
+      - bjet2_mass
+      - bjet2_btagPNetB
 
-  - bjet2_pt
-  - bjet2_eta
-  - bjet2_phi
-  - bjet2_mass
-  - bjet2_btagPNetB
+      - wjet1_pt
 
-  - wjet1_pt
+      - wjet2_pt
 
-  - wjet2_pt
+      - fatbjet_pt
+      - fatbjet_eta
+      - fatbjet_phi
+      - fatbjet_mass
+      - fatbjet_particleNetWithMass_HbbvsQCD
 
-  - fatbjet_pt
-  - fatbjet_eta
-  - fatbjet_phi
-  - fatbjet_mass
-  - fatbjet_particleNetWithMass_HbbvsQCD
+      - fatwjet_pt
 
-  - fatwjet_pt
+      - bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino
+      - bb_pt
+      - bb_mass
 
-  - bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino
-  - bb_pt
-  - bb_mass
+      - HT
+      - ll_dR
+      - bb_dR
+      - ll_bb_dR
+      - ll_jj_dR
+      - ll_dphi
+      - met_ll_dphi
+      - met_bb_dphi
+      - MT
+      - lep1_MT
+      - lep2_MT
+      - total_MT
+      - MT2_ll
+      - MT2_bb
+      - MT2_blbl1
+      - MT2_blbl2
+      - MT2_blbl_min
+      - MT2_blbl_max
+      - MT2_blbl_dR
+      - MT2_blbl1_delta_phi
+      - MT2_blbl2_delta_phi
+      - MT2_blbl1_ptratio
+      - MT2_blbl2_ptratio
+      # - MT2_blbl1_nu1_ptfrac
+      # - MT2_blbl1_nu2_ptfrac
+      # - MT2_blbl2_nu1_ptfrac
+      # - MT2_blbl2_nu2_ptfrac
+      # - MT2_blbl1_balanced
+      # - MT2_blbl2_balanced
+      - ll_mass
+      - bb_CosTheta
 
-  - HT
-  - ll_dR
-  - bb_dR
-  - ll_bb_dR
-  - ll_jj_dR
-  - ll_dphi
-  - met_ll_dphi
-  - met_bb_dphi
-  - MT
-  - lep1_MT
-  - lep2_MT
-  - total_MT
-  - MT2_ll
-  - MT2_bb
-  - MT2_blbl1
-  - MT2_blbl2
-  - MT2_blbl_min
-  - MT2_blbl_max
-  - MT2_blbl_dR
-  - MT2_blbl1_delta_phi
-  - MT2_blbl2_delta_phi
-  - MT2_blbl1_ptratio
-  - MT2_blbl2_ptratio
-  - ll_mass
-  - bb_CosTheta
+      - lep1_Muon_pfRelIso04_all
+      - lep2_Muon_pfRelIso04_all
+      - lep1_Electron_pfRelIso03_all
+      - lep2_Electron_pfRelIso03_all
+      - mT_fix
 
-  - lep1_Muon_pfRelIso04_all
-  - lep2_Muon_pfRelIso04_all
-  - lep1_Electron_pfRelIso03_all
-  - lep2_Electron_pfRelIso03_all
-  - mT_fix
+      # Variables for DY corrections
+      - nJet
+      - Njets
+      - nBTaggedJets
+      - ll_pt
+      - ll_pt_gen
 
-  # Variables for DY corrections
-  - nJet
-  - Njets
-  - nBTaggedJets
-  - ll_pt
-  - ll_pt_gen
+      # High Level
+      - DeepHME_mass
+      - DeepHME_mass_error
 
-  # High Level
-  - DeepHME_mass
-  - DeepHME_mass_error
+      # High Level Single Lepton
+      # need to be added to hist config
+      # I will comment out them for now
+      # - disc_higgs_sqr
+      # - disc_top_sqr
+      - hadT_mass
+      - lepT_mass
+      - WW_ptToE
+      - bb_ptToE
+      - hadT_pt
+      - lepT_pt
+      - hadT_constituentPtFrac
+      - lepT_constituentPtFrac
+      # - TT_mass
+      - lepT_mT
+      # - hadT_hadW_dphi
+      # - hadT_hadW_deta
+      - hadT_hadW_dR
+      # - hadW_leadbjet_dphi
+      # - hadW_leadbjet_deta
+      # - hadW_leadbjet_dR
+      - hadW_mass
+      - bb_dphi
+      - bb_deta
+      # - hadW_lep_dphi
+      # - hadW_lep_deta
+      # - hadW_lep_dR
+      # - hadW_lepWfromT_dphi
+      # - hadW_lepWfromT_deta
+      # - hadW_lepWfromT_dR
+      # - hadW_lepWfromH_dphi
+      # - hadW_lepWfromH_deta
+      # - hadW_lepWfromH_dR
+      # - Hbb_lepWfromH_dphi
+      # - Hbb_lepWfromH_deta
+      - Hbb_lepWfromH_dR
+      - lep1_bjets_minDr
+      # - lep1_bjets_minDphi
+      # - bjet_lepWfromT_minDphi
+      # - bjet_lepWfromH_minDphi
+      - WW_pt
 
-  # High Level Single Lepton
-  # need to be added to hist config
-  # I will comment out them for now
-  # - disc_higgs_sqr
-  # - disc_top_sqr
-  - hadT_mass
-  - lepT_mass
-  - WW_ptToE
-  - bb_ptToE
-  - hadT_pt
-  - lepT_pt
-  - hadT_constituentPtFrac
-  - lepT_constituentPtFrac
-  # - TT_mass
-  - lepT_mT
-  # - hadT_hadW_dphi
-  # - hadT_hadW_deta
-  - hadT_hadW_dR
-  # - hadW_leadbjet_dphi
-  # - hadW_leadbjet_deta
-  # - hadW_leadbjet_dR
-  - hadW_mass
-  - bb_dphi
-  - bb_deta
-  # - hadW_lep_dphi
-  # - hadW_lep_deta
-  # - hadW_lep_dR
-  # - hadW_lepWfromT_dphi
-  # - hadW_lepWfromT_deta
-  # - hadW_lepWfromT_dR
-  # - hadW_lepWfromH_dphi
-  # - hadW_lepWfromH_deta
-  # - hadW_lepWfromH_dR
-  # - Hbb_lepWfromH_dphi
-  # - Hbb_lepWfromH_deta
-  - Hbb_lepWfromH_dR
-  - lep1_bjets_minDr
-  # - lep1_bjets_minDphi
-  # - bjet_lepWfromT_minDphi
-  # - bjet_lepWfromH_minDphi
-  - WW_pt
+      - DNN_M300_Signal
+      - DNN_M400_Signal
+      - DNN_M500_Signal
+      - DNN_M550_Signal
+      - DNN_M600_Signal
+      - DNN_M650_Signal
+      - DNN_M700_Signal
+      - DNN_M800_Signal
+      - DNN_M900_Signal
+      - DNN_M1000_Signal
 
-  - DNN_M300_Signal
-  - DNN_M400_Signal
-  - DNN_M500_Signal
-  - DNN_M550_Signal
-  - DNN_M600_Signal
-  - DNN_M650_Signal
-  - DNN_M700_Signal
-  - DNN_M800_Signal
-  - DNN_M900_Signal
-  - DNN_M1000_Signal
-
-  - name: DNN_m300_vs_HME
-    vars: [ DNN_M300_Signal, DeepHME_mass ]
-  - name: DNN_m400_vs_HME
-    vars: [ DNN_M400_Signal, DeepHME_mass ]
-  - name: DNN_m500_vs_HME
-    vars: [ DNN_M500_Signal, DeepHME_mass ]
-  - name: DNN_m550_vs_HME
-    vars: [ DNN_M550_Signal, DeepHME_mass ]
-  - name: DNN_m600_vs_HME
-    vars: [ DNN_M600_Signal, DeepHME_mass ]
-  - name: DNN_m650_vs_HME
-    vars: [ DNN_M650_Signal, DeepHME_mass ]
-  - name: DNN_m700_vs_HME
-    vars: [ DNN_M700_Signal, DeepHME_mass ]
-  - name: DNN_m800_vs_HME
-    vars: [ DNN_M800_Signal, DeepHME_mass ]
-  - name: DNN_m900_vs_HME
-    vars: [ DNN_M900_Signal, DeepHME_mass ]
-  - name: DNN_m1000_vs_HME
-    vars: [ DNN_M1000_Signal, DeepHME_mass ]
+      - name: DNN_m300_vs_HME
+        vars: [ DNN_M300_Signal, DeepHME_mass ]
+      - name: DNN_m400_vs_HME
+        vars: [ DNN_M400_Signal, DeepHME_mass ]
+      - name: DNN_m500_vs_HME
+        vars: [ DNN_M500_Signal, DeepHME_mass ]
+      - name: DNN_m550_vs_HME
+        vars: [ DNN_M550_Signal, DeepHME_mass ]
+      - name: DNN_m600_vs_HME
+        vars: [ DNN_M600_Signal, DeepHME_mass ]
+      - name: DNN_m650_vs_HME
+        vars: [ DNN_M650_Signal, DeepHME_mass ]
+      - name: DNN_m700_vs_HME
+        vars: [ DNN_M700_Signal, DeepHME_mass ]
+      - name: DNN_m800_vs_HME
+        vars: [ DNN_M800_Signal, DeepHME_mass ]
+      - name: DNN_m900_vs_HME
+        vars: [ DNN_M900_Signal, DeepHME_mass ]
+      - name: DNN_m1000_vs_HME
+        vars: [ DNN_M1000_Signal, DeepHME_mass ]
 
 StatInference:
   config: config/Datacards/x_hh_bbww_DL_run3.yaml

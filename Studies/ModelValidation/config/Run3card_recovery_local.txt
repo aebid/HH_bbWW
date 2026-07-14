@@ -8,7 +8,7 @@ shapes * recovery run3_res1b.root m$MASS_$PROCESS
 bin             recovery
 observation     -1
 bin             recovery        recovery        recovery        recovery
-process         signal          TT              fit_DY              Other
+process         signal          TT              DY          Other
 process         0               1               2               3  
 rate            -1              -1              -1              -1
 --------------------------------------------------------------------------------

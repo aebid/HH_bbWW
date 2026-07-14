@@ -1,18 +1,19 @@
 # storage_folder: /eos/uscms/store/user/lpcflaf/HH_bbWW/histTuples/v2601a/
-storage_folder: /eos/user/d/daebi/HH_bbWW/histTuples/v2601a/*/ # Include all eras with *
+# storage_folder: /eos/user/d/daebi/HH_bbWW/histTuples/v2601a/*/ # Include all eras with *
+# storage_folder: /eos/user/d/daebi/HH_bbWW/v2605a_centrals/HistTuples/*/ # Include all eras with *
+storage_folder: /eos/user/d/daebi/HH_bbWW/v2605a_DNNTraining_MediumBTag/HistTuples/*/ # Include all eras with *
 
 nParity: 4
 
 # Cuts for RDF in creating the training file
 iterate_cut: (
-  (ZVeto_OS_Iso == 1) &&
-  (bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino > 70) &&
-  (bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino < 150) &&
+  (SR == 1) &&
+  (bb_mass > 70) &&
+  (bb_mass < 150) &&
   ( (res2b == 1) || (recovery == 1) ) &&
   ( (channelId == 11) || (channelId == 12) || (channelId == 22) )
   ) &&
-  ( ll_mass < 70 ) &&
-  ( dR_dilep < 2.5 )
+  ( PuppiMET_pt > 40 )
 parity_cut: (
   (event%{nParity} == {parity_scan})
   )
@@ -21,7 +22,7 @@ signal:
   XtoYHto2B2W:
     class_value: 0
     spin: 0
-    mass_points: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000, 2500, 3000, 3500, 4000 ]
+    mass_points: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000 ]
     dataset_name_format:
       XtoYHto2B2Wto2B2L2Nu_MX_{}_MY_125
     combined_name:
@@ -36,57 +37,17 @@ background:
       - TTto2L2Nu
       - TTtoLNu2Q
       - TTto4Q
-  DY:
+
+
+  ST:
     class_value: 2
     background_datasets:
-      - DYto2E_M_10to50_amcatnloFXFX
-      - DYto2E_M_50_0J_amcatnloFXFX
-      - DYto2E_M_50_1J_amcatnloFXFX
-      - DYto2E_M_50_2J_amcatnloFXFX
+      - TbarBQ_t_channel_4FS
+      - TbarBtoLminusNuB_s_channel_4FS
 
-      - DYto2E_M_50_PTLL_40to100_1J_amcatnloFXFX
-      - DYto2E_M_50_PTLL_40to100_2J_amcatnloFXFX
+      - TBbarQ_t_channel_4FS
+      - TBbartoLplusNuBbar_s_channel_4FS
 
-      - DYto2E_M_50_PTLL_100to200_1J_amcatnloFXFX
-      - DYto2E_M_50_PTLL_100to200_2J_amcatnloFXFX
-
-      - DYto2E_M_50_PTLL_200to400_1J_amcatnloFXFX
-      - DYto2E_M_50_PTLL_200to400_2J_amcatnloFXFX
-
-      - DYto2E_M_50_PTLL_400to600_1J_amcatnloFXFX
-      - DYto2E_M_50_PTLL_400to600_2J_amcatnloFXFX
-
-      - DYto2E_M_50_PTLL_600_1J_amcatnloFXFX
-      - DYto2E_M_50_PTLL_600_2J_amcatnloFXFX
-
-      - DYto2Mu_M_10to50_amcatnloFXFX
-      - DYto2Mu_M_50_0J_amcatnloFXFX
-      - DYto2Mu_M_50_1J_amcatnloFXFX
-      - DYto2Mu_M_50_2J_amcatnloFXFX
-
-      - DYto2Mu_M_50_PTLL_40to100_1J_amcatnloFXFX
-      - DYto2Mu_M_50_PTLL_40to100_2J_amcatnloFXFX
-
-      - DYto2Mu_M_50_PTLL_100to200_1J_amcatnloFXFX
-      - DYto2Mu_M_50_PTLL_100to200_2J_amcatnloFXFX
-
-      - DYto2Mu_M_50_PTLL_200to400_1J_amcatnloFXFX
-      - DYto2Mu_M_50_PTLL_200to400_2J_amcatnloFXFX
-
-      - DYto2Mu_M_50_PTLL_400to600_1J_amcatnloFXFX
-      - DYto2Mu_M_50_PTLL_400to600_2J_amcatnloFXFX
-
-      - DYto2Mu_M_50_PTLL_600_1J_amcatnloFXFX
-      - DYto2Mu_M_50_PTLL_600_2J_amcatnloFXFX
-
-      - DYto2Tau_M_10to50_amcatnloFXFX
-      - DYto2Tau_M_50_0J_amcatnloFXFX
-      - DYto2Tau_M_50_1J_amcatnloFXFX
-      - DYto2Tau_M_50_2J_amcatnloFXFX
-
-  Other:
-    class_value: 3
-    background_datasets:
       - TbarWplusto2L2Nu
       - TbarWplustoLNu2Q
       - TbarWplusto4Q
@@ -95,6 +56,96 @@ background:
       - TWminustoLNu2Q
       - TWminusto4Q
 
-      - WW
-      - WZ
-      - ZZ
+
+
+  DY:
+    class_value: 3
+    background_datasets:
+      - DYto2L_M_10to50_amcatnloFXFX
+      - DYto2L_M_50_0J_amcatnloFXFX
+      - DYto2L_M_50_1J_amcatnloFXFX
+      - DYto2L_M_50_2J_amcatnloFXFX
+
+      - DYto2L_M_50_amcatnloFXFX
+
+      - DYto2L_M_50_PTLL_40to100_1J_amcatnloFXFX
+      - DYto2L_M_50_PTLL_40to100_2J_amcatnloFXFX
+
+      - DYto2L_M_50_PTLL_100to200_1J_amcatnloFXFX
+      - DYto2L_M_50_PTLL_100to200_2J_amcatnloFXFX
+
+      - DYto2L_M_50_PTLL_200to400_1J_amcatnloFXFX
+      - DYto2L_M_50_PTLL_200to400_2J_amcatnloFXFX
+
+      - DYto2L_M_50_PTLL_400to600_1J_amcatnloFXFX
+      - DYto2L_M_50_PTLL_400to600_2J_amcatnloFXFX
+
+      - DYto2L_M_50_PTLL_600_1J_amcatnloFXFX
+      - DYto2L_M_50_PTLL_600_2J_amcatnloFXFX
+
+  H:
+    class_value: 4
+    background_datasets:
+      - GluGluHto2B_M125
+      - GluGluHto2Wto2L2Nu_M125
+      - GluGluHto2Tau_UncorrelatedDecay_UnFiltered
+
+      - VBFHto2B_M125
+      - VBFHto2Tau_UncorrelatedDecay_UnFiltered
+
+      - WminusH_Hto2B_Wto2Q
+      - WminusH_Hto2B_WtoLNu
+      - WminusHto2Tau_UncorrelatedDecay_UnFiltered
+      - WplusH_Hto2B_Wto2Q
+      - WplusH_Hto2B_WtoLNu
+      - WplusHto2Tau_UncorrelatedDecay_UnFiltered
+
+      - ggZH_Hto2B_Zto2L
+      - ggZH_Hto2B_Zto2Q
+
+      - TTHto2B_M125
+      - TTHtoNon2B_M125
+
+  # VV:
+  #   class_value: 5
+  #   background_datasets:
+  #     - WWto2L2Nu_powheg
+  #     - WWtoLNu2Q_powheg
+  #     - WWto4Q_powheg
+
+  #     - WZto3LNu_powheg
+  #     - WZto2L2Q_powheg
+  #     - WZtoLNu2Q_powheg
+
+  #     - ZZto4L_powheg
+  #     - ZZto2L2Nu_powheg
+  #     - ZZto2L2Q_powheg
+  #     - ZZto2Nu2Q_powheg
+
+  # Other:
+  #   class_value: 6
+  #   background_datasets:
+  #     - WtoLNu_0J_amcatnloFXFX
+  #     - WtoLNu_1J_amcatnloFXFX
+  #     - WtoLNu_2J_amcatnloFXFX
+
+
+  Other:
+    class_value: 5
+    background_datasets:
+      - WWto2L2Nu_powheg
+      - WWtoLNu2Q_powheg
+      - WWto4Q_powheg
+
+      - WZto3LNu_powheg
+      - WZto2L2Q_powheg
+      - WZtoLNu2Q_powheg
+
+      - ZZto4L_powheg
+      - ZZto2L2Nu_powheg
+      - ZZto2L2Q_powheg
+      - ZZto2Nu2Q_powheg
+
+      - WtoLNu_0J_amcatnloFXFX
+      - WtoLNu_1J_amcatnloFXFX
+      - WtoLNu_2J_amcatnloFXFX
