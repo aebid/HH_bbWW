@@ -2,8 +2,8 @@ import os
 import yaml
 import awkward as ak
 
-resolved = 1
-if resolved:
+training_type = "merged"
+if training_type == "resolved":
     # Resolved
     template = "config/training_setup_doubleLep_resolved.yaml"
     # output_folder = "CondorConfigs/DoubleLepton_Resolved_25May_parametric_v1"
@@ -39,7 +39,7 @@ if resolved:
         "n_units": [512],
         "n_units_reduction_factor": [1.0],
         "signal_loss_scale": [1.0],  # Frozen 1.0
-        "multiclass_loss_scale": [0.5],  # Frozen 0.5
+        "multiclass_loss_scale": [0.0],  # Frozen 0.5
         # "UseParametric": [True],
         "UseParametric": [False],
         "use_batch_norm": [True],
@@ -50,7 +50,7 @@ if resolved:
         "class_names": [ ["Signal", "TT", "DY", "SMHiggs", "Other"] ],
     }
 
-else:
+elif training_type == "boosted":
     # Boosted
     template = "config/training_setup_doubleLep_boosted.yaml"
     output_folder = "CondorConfigs/DoubleLepton_Boosted_16June_v6"
@@ -101,6 +101,64 @@ else:
         "weight_decay": [0.001],
         "class_names": [ ["Signal", "Background"] ],
     }
+
+elif training_type == "merged":
+    # Merged
+    template = "config/training_setup_doubleLep_merged.yaml"
+    output_folder = "CondorConfigs/DoubleLepton_Merged_14July_Parametric"
+
+    input_file_template = "/eos/user/d/daebi/HH_bbWW/DNNDatasets/merged_jul14_mediumBtag/Dataset/nParity{j}_Merged.root"
+
+    mass_specific = False
+    # mass_list = [
+    #     300,
+    #     400,
+    #     500,
+    #     550,
+    #     600,
+    #     650,
+    #     700,
+    #     800,
+    #     900,
+    #     1000,
+    #     1200,
+    #     1400,
+    #     1600,
+    #     1800,
+    #     2000,
+    # ]
+    mass_list = [-1]
+    # weight_file_template = "/eos/user/d/daebi/HH_bbWW/DNNDatasets/merged_jul14_mediumBtag/Dataset/nParity{j}_Merged_weight_m{m}.root"
+    weight_file_template = "/eos/user/d/daebi/HH_bbWW/DNNDatasets/merged_jul14_mediumBtag/Dataset/nParity{j}_Merged_weight.root"
+
+    # training_name = "DNN_DoubleLepton_Boosted_Training{i}_par{j}_m{m}"
+    training_name = "DNN_DoubleLepton_Boosted_Training{i}_par{j}"
+    var_parse_dict = {
+        "learning_rate": [0.0005],  # Frozen 0.005
+        "n_epochs": [200],  # Frozen 100
+        "dropout": [0.0],  # Frozen 0.2
+        # "parametric_list": [[-1]],
+        'parametric_list': [ [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000, 1200, 1400, 1600, 1800, 2000 ] ],
+        "l2_rate": [0.01],  # Frozen 0.001
+        "gamma1": [1.5],  # Frozen 1.5
+        "gamma2": [0.9],  # Frozen 0.9
+        "n_layers": [5],  # Frozen 3
+        "n_units": [256],
+        "n_units_reduction_factor": [1.0],  # Frozen 1
+        "signal_loss_scale": [1.0],  # Frozen 1.0
+        "multiclass_loss_scale": [0.5],  # Frozen 0.5
+        "UseParametric": [True],
+        "use_batch_norm": [True],
+        "nClasses": [2],
+        "patience": [50],
+        "lr_patience": [10],
+        "lr_decay": [0.8],
+        "weight_decay": [0.001],
+        "class_names": [ ["Signal", "Background"] ],
+    }
+
+else:
+    raise RunTimeError(f"Bad training type {training_type}")
 
 os.makedirs(output_folder, exist_ok=True)
 

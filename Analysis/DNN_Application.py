@@ -64,7 +64,9 @@ class DNNProducer:
                     self.dnnConfig[channel][f"m{mass}"] = yaml.safe_load(file)
 
                 load_features.update(self.dnnConfig[channel][f"m{mass}"]["features"])
-                self.classes_to_save.update(self.dnnConfig[channel][f"m{mass}"]["class_names"])
+                self.classes_to_save.update(
+                    self.dnnConfig[channel][f"m{mass}"]["class_names"]
+                )
 
                 modelname_parity = self.dnnConfig[channel][f"m{mass}"][
                     "modelname_parity"
@@ -230,11 +232,15 @@ class DNNProducer:
                 field_name = f"M{mass}_{class_name}"
                 # Build the empty branches with ones
                 if f"SL_Resolved_{field_name}" not in branches.fields:
-                    branches[f"SL_Resolved_{field_name}"] = np.zeros_like(branches.event)
+                    branches[f"SL_Resolved_{field_name}"] = np.zeros_like(
+                        branches.event
+                    )
                 if f"SL_Boosted_{field_name}" not in branches.fields:
                     branches[f"SL_Boosted_{field_name}"] = np.zeros_like(branches.event)
                 if f"DL_Resolved_{field_name}" not in branches.fields:
-                    branches[f"DL_Resolved_{field_name}"] = np.zeros_like(branches.event)
+                    branches[f"DL_Resolved_{field_name}"] = np.zeros_like(
+                        branches.event
+                    )
                 if f"DL_Boosted_{field_name}" not in branches.fields:
                     branches[f"DL_Boosted_{field_name}"] = np.zeros_like(branches.event)
                 output_fields[field_name] = np.where(
