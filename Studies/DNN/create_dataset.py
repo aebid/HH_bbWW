@@ -4,6 +4,7 @@ import numpy as np
 import yaml
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import glob
 
 import ROOT
 import FLAF.RunKit.grid_tools as grid_tools
@@ -222,12 +223,15 @@ def measure_cut_datasets(config_dict, output_folder, remote=False):
 
             process_dir = os.path.join(storage_folder, dataset_name)
 
+            treeName = "Events"
+
             if remote:
                 input_files = f"root://cmseos.fnal.gov/{process_dir}/*.root"
+                rdf = ROOT.RDataFrame(treeName, input_files)
             else:
                 input_files = f"{process_dir}/*.root"
-            treeName = "Events"
-            rdf = ROOT.RDataFrame(treeName, input_files)
+                input_file_list = glob.glob(input_files)
+                rdf = ROOT.RDataFrame(treeName, input_file_list)
 
             total = rdf.Count().GetValue()
             rdf = rdf.Filter(iterate_cut)
@@ -347,8 +351,11 @@ def add_weight_file(output_folder, mass=None):
         class_targets = branches["class_value"]
         class_weight = branches["weight_Central"]
 
+        # Set all signals to target 0
+        class_targets = np.where(class_targets <= 0, 0, class_targets)
+
         # Set to binary for now actually
-        # class_targets = np.where(class_targets > 0, 1, class_targets)
+        class_targets_binary = np.where(class_targets <= 0, 0, 1)
 
         # Set any negative weight events to 0
         class_weight = np.where(class_weight <= 0, 0.0, class_weight)
@@ -436,16 +443,44 @@ def add_weight_file(output_folder, mass=None):
             f"Total background: {np.sum(np.where(class_targets != 0, multiclass_weight, 0.0))}"
         )
 
+        counts, bin_edges = np.histogram(
+            branches["class_value"],
+            bins=15,
+            range=(-5,10),
+            weights=class_weight
+        )
+        weighted_histogram = (counts, bin_edges)
+
+        counts_multiclass, bin_edges_multiclass = np.histogram(
+            branches["class_value"],
+            bins=15,
+            range=(-5,10),
+            weights=multiclass_weight
+        )
+        weighted_histogram_multiclass = (counts_multiclass, bin_edges_multiclass)
+
         out_dict = {
-            "class_weight": class_weight,
-            "class_target": class_targets,
-            "multiclass_weight": multiclass_weight,
+            "weight_tree": {
+                "class_weight": class_weight,
+                "class_target": class_targets,
+                "multiclass_weight": multiclass_weight,
+                "class_targets_binary": class_targets_binary,
+            },
+            "weighted_class_targets": weighted_histogram,
+            "weighted_class_targets_multiclass": weighted_histogram_multiclass,
         }
 
         print("Finished with dict")
         print(out_dict)
 
-        out_file["weight_tree"] = out_dict
+        for key, value in out_dict.items():
+            if isinstance(value, tuple):
+                val_arr = value[0].to_numpy() if hasattr(value[0], "to_numpy") else value[0]
+                edge_arr = value[1].to_numpy() if hasattr(value[1], "to_numpy") else value[1]
+                out_file[key] = (val_arr, edge_arr)
+            else:
+                out_file[key] = value
+
         out_file.close()
 
 
@@ -455,7 +490,8 @@ def input_feature_plots(output_folder):
         for x in os.listdir(output_folder)
         if x.endswith(".root")
     ]
-    color_map = plt.get_cmap("tab10").colors[:10]
+    # color_map = plt.get_cmap("tab10").colors[:10]
+    color_map = plt.get_cmap("tab20").colors
 
     input_features = set(
         [
@@ -471,7 +507,7 @@ def input_feature_plots(output_folder):
             "MT",
             "MT2_ll",
             "MT2_bb",
-            "MT2_blbl",
+            "MT2_blbl1",
             "MT2_blbl2",
             "total_MT",
             "lep1_MT",
@@ -528,7 +564,7 @@ def input_feature_plots(output_folder):
     base_branches = set(["class_value", "X_mass", "weight_Central"])
     branches_to_load = list(input_features | base_branches)
 
-    class_names = ["Signal", "TT", "DY", "ST", "SMHiggs", "VV", "Other"]
+    class_names = ["bbWW_2L", "TT", "DY", "ST", "SMHiggs", "VV", "Other", "bbtautau", "bbWW_1L"]
 
     for inName in inNames:
         if "weight" in inName:
@@ -551,6 +587,7 @@ def input_feature_plots(output_folder):
             color_map_idx = 0
             # Make a plot of input features with different colors for each class_target
             for class_value in np.unique(class_targets):
+                # print(f"Plotting color {color_map_idx} for class {class_value} on map {color_map}")
                 feature_values = branches[inp_feature][class_targets == class_value]
                 weights = class_weight[class_targets == class_value]
                 mass = X_mass[class_targets == class_value]
@@ -632,7 +669,7 @@ if __name__ == "__main__":
     measure_cut_datasets(config_dict, output_folder)
     hadd_files(config_dict, output_folder)
     add_weight_file(output_folder) # Option for all masses
-    for mass in config_dict["signal"]["XtoYHto2B2W"]["mass_points"]:
-        print(f"Starting mass {mass}")
-        add_weight_file(output_folder, mass=mass)
+    # for mass in config_dict["signal"]["XtoYHto2B2W_2L"]["mass_points"]:
+    #     print(f"Starting mass {mass}")
+    #     add_weight_file(output_folder, mass=mass)
     input_feature_plots(output_folder)
