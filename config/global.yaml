@@ -579,6 +579,15 @@ histTuple_flavors:
 
     variables:
       - lep1_pt
+
+  default:
+    # DNN Inputs
+    fullResolution_variables:
+      # Add one default fullres for CI to validate it works
+      - lep1_pt
+
+    variables:
+      - lep1_pt
       - lep1_eta
       - lep1_phi
       - lep1_mass
@@ -646,12 +655,6 @@ histTuple_flavors:
       - MT2_blbl2_delta_phi
       - MT2_blbl1_ptratio
       - MT2_blbl2_ptratio
-      # - MT2_blbl1_nu1_ptfrac
-      # - MT2_blbl1_nu2_ptfrac
-      # - MT2_blbl2_nu1_ptfrac
-      # - MT2_blbl2_nu2_ptfrac
-      # - MT2_blbl1_balanced
-      # - MT2_blbl2_balanced
       - ll_mass
       - bb_CosTheta
 

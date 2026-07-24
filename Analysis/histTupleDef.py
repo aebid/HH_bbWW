@@ -38,10 +38,6 @@ def GetDfw(df, setup, dataset_name):
     period = global_params["era"]
     dfw = analysis.DataFrameBuilderForHistograms(df, global_params, period)
     new_dfw = analysis.PrepareDfForHistograms(dfw, isData)
-
-    for var in setup.histTuple_fullres_vars:
-        new_dfw.colToSave.append(var)
-
     return new_dfw
 
 
