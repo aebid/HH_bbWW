@@ -50,30 +50,51 @@ uncertainties:
 
 
   # - name: MuonID_TightID
-  - name: CMS_eff_m_id
+  # These sources are decorrelated across eras, so config/Run3_<era>/weights.yaml
+  # writes them with the era suffix and the datacard has to name the era it wants.
+  # This configuration covers Run3_2023BPix only; adding another era here means
+  # adding that era's entries too. CMS_scale_j is deliberately unsuffixed -- JES
+  # `Total` stays correlated, see x_hh_bbww_DL_run3.yaml for why.
+  - name: CMS_eff_m_id_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
   # - name: MuonID_TightIDIso
-  - name: CMS_eff_m_id_iso
+  - name: CMS_eff_m_id_iso_2023BPix
     type: shape
-  - name: EleID_TightIDIso
+    eras:
+      - Run3_2023BPix
+  - name: EleID_TightIDIso_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
 
-  - name: SingleEleTrg
+  - name: SingleEleTrg_2023BPix
     type: shape
-  - name: SingleMuonTrg
+    eras:
+      - Run3_2023BPix
+  - name: SingleMuonTrg_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
 
 
-  - name: CMS_pileup
+  - name: CMS_pileup_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
 
 
   - name: CMS_scale_j
     type: shape
-  - name: CMS_res_j
+  - name: CMS_res_j_2023BPix
     type: shape
-  - name: CMS_scale_e
+    eras:
+      - Run3_2023BPix
+  - name: CMS_scale_e_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
 
 
   # For multiple values, Konstantin says do [ down, up ]
