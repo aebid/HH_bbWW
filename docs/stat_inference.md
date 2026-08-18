@@ -66,6 +66,17 @@ nuisance to the datacard configuration without adding it there fails with
 because the variation is then produced but is byte-identical to the nominal shape, giving a
 nuisance that constrains nothing and looks fine.
 
+A `shape:` entry costs more than a `norm:` one, and in a way that is easy to get wrong. A
+`norm:` entry is a weight expression evaluated on the central tree, so registering one and
+re-running the histTuple step is enough. A `shape:` entry names a *shifted tree*, and
+`HistTupleProducer` opens that tree in the anaTuple **and in every AnalysisCache it reads**
+(DNN, DeepHME). A source can therefore be present in the anaTuples and still fail, because
+the caches were produced before it was registered — the symptom is
+`ERROR: tree Events__<source>__Up not found in file ...` pointing at a `luigi-tmp` cache
+file, not at the anaTuple. Checking the anaTuple alone is not sufficient. Adding a new
+`shape:` source means regenerating the caches, so it belongs with an anaTuple production
+rather than a weights-only re-run.
+
 #### b-tagging shape calibration
 
 The BTV shape calibration contributes eight nuisances — `CMS_btag_LF`, `CMS_btag_HF`,

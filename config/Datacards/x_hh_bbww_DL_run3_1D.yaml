@@ -400,27 +400,6 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
-  # Muon momentum scale/resolution. Registered in config/Run3_<era>/weights.yaml as
-  # ScaRe; the correction was already applied at AnaTuple stage for these eras but no
-  # variation was ever produced, so the analysis had an electron energy scale nuisance
-  # and no muon counterpart. Decorrelated: MuonEnergyScale_corr.py loads a per-period
-  # JSON, so like CMS_scale_e it is a per-era measurement.
-  - name: CMS_ScaRe_mu_2022
-    type: shape
-    eras:
-      - Run3_2022
-  - name: CMS_ScaRe_mu_2022EE
-    type: shape
-    eras:
-      - Run3_2022EE
-  - name: CMS_ScaRe_mu_2023
-    type: shape
-    eras:
-      - Run3_2023
-  - name: CMS_ScaRe_mu_2023BPix
-    type: shape
-    eras:
-      - Run3_2023BPix
 
 
   # For multiple values, Konstantin says do [ down, up ]

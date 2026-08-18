@@ -92,8 +92,10 @@ shape:
     name: CMS_scale_j_{}
   EleES:
     name: CMS_scale_e_2022_{}
-  # Muon momentum scale/resolution. Applied at AnaTuple stage
-  # (Corrections/MuonEnergyScale_corr.py); this registers the variation, which
-  # the 2024+ era files already had and these four were missing.
-  ScaRe:
-    name: CMS_ScaRe_mu_2022_{}
+  # NOT registered here on purpose: ScaRe (muon momentum scale). The anaTuples do
+  # carry Events__ScaRe__{Up,Down}, but a `shape:` source also needs the matching
+  # tree in every AnalysisCache the histTuple opens (DNN, DeepHME), and those were
+  # produced before ScaRe existed -- HistTupleProducer then dies with
+  # "tree Events__ScaRe__Up not found". Adding it means regenerating the caches,
+  # so it belongs with the next anaTuple production rather than a weights-only
+  # re-run. The 2024+ era files register it because their caches are newer.

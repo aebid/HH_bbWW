@@ -221,8 +221,7 @@ uncertainties:
       - Run3_2023BPix
     value: 0.014 # TODO: per-year LUM value
 
-
-  # - name: MuonID_TightID
+  # Muon ID
   - name: CMS_eff_m_id_2022
     type: shape
     eras:
@@ -239,7 +238,8 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
-  # - name: MuonID_TightIDIso
+
+  # Muon Iso
   - name: CMS_eff_m_id_iso_2022
     type: shape
     eras:
@@ -256,6 +256,8 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
+  # Ele ID and Iso
   - name: EleID_TightIDIso_2022
     type: shape
     eras:
@@ -273,6 +275,7 @@ uncertainties:
     eras:
       - Run3_2023BPix
 
+  # Ele Trigger
   - name: SingleEleTrg_2022
     type: shape
     eras:
@@ -289,6 +292,8 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
+  # Muon Trigger
   - name: SingleMuonTrg_2022
     type: shape
     eras:
@@ -306,10 +311,7 @@ uncertainties:
     eras:
       - Run3_2023BPix
 
-
-  # Decorrelated per era: the pileup profile and the minimum-bias cross section
-  # are derived per era. The era suffix is produced by config/Run3_<era>/weights.yaml
-  # -- the nuisance name is also the histogram name, so it cannot be added here.
+  # Pileup
   - name: CMS_pileup_2022
     type: shape
     eras:
@@ -327,15 +329,13 @@ uncertainties:
     eras:
       - Run3_2023BPix
 
-  # BTV shape calibration, registered in config/Run3_*/weights.yaml. Correlated
-  # across the four Run 3 eras -- the BTV per-era split of the *stats* sources needs
-  # meta-era support that dc_make does not have yet (see docs/stat_inference.md).
-  # In boosted categories the variation is neutralised at weight level, so these are
-  # dropped there automatically by the canIgnore threshold.
+  # AK4 BTagging
   - name: CMS_btag_LF
     type: shape
+
   - name: CMS_btag_HF
     type: shape
+
   - name: CMS_btag_lfstats1_2022
     type: shape
     eras:
@@ -352,6 +352,7 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
   - name: CMS_btag_lfstats2_2022
     type: shape
     eras:
@@ -368,6 +369,7 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
   - name: CMS_btag_hfstats1_2022
     type: shape
     eras:
@@ -384,6 +386,7 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
   - name: CMS_btag_hfstats2_2022
     type: shape
     eras:
@@ -400,15 +403,14 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
+
   - name: CMS_btag_cferr1
     type: shape
+
   - name: CMS_btag_cferr2
     type: shape
 
-  # AK8 calibration, registered in config/Run3_*/weights.yaml. Neutralised at
-  # weight level for resolved events, so canIgnore drops these outside boosted.
-  # Decorrelated: Corrections/fatjet.py loads one of four separate calibration files,
-  # so these are four independent fits.
+  # AK8 BTagging
   - name: CMS_bbww_ak8_Hbb_2022
     type: shape
     eras:
@@ -503,27 +505,6 @@ uncertainties:
     eras:
       - Run3_2023
   - name: CMS_scale_e_2023BPix
-    type: shape
-    eras:
-      - Run3_2023BPix
-  # Muon momentum scale/resolution. Registered in config/Run3_<era>/weights.yaml as
-  # ScaRe; the correction was already applied at AnaTuple stage for these eras but no
-  # variation was ever produced, so the analysis had an electron energy scale nuisance
-  # and no muon counterpart. Decorrelated: MuonEnergyScale_corr.py loads a per-period
-  # JSON, so like CMS_scale_e it is a per-era measurement.
-  - name: CMS_ScaRe_mu_2022
-    type: shape
-    eras:
-      - Run3_2022
-  - name: CMS_ScaRe_mu_2022EE
-    type: shape
-    eras:
-      - Run3_2022EE
-  - name: CMS_ScaRe_mu_2023
-    type: shape
-    eras:
-      - Run3_2023
-  - name: CMS_ScaRe_mu_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
