@@ -4,10 +4,10 @@ norm:
     name: CMS_pileup_2023BPix_{}
   MuonID_SF_Iso_ID:
     expression: weight_lep1_MuonID_SF_LoosePFIso_TightID{scale}_rel * weight_lep2_MuonID_SF_LoosePFIso_TightID{scale}_rel * final_weight
-    name: CMS_eff_m_id_iso_{}
+    name: CMS_eff_m_id_iso_2023BPix_{}
   MuonID_SF_ID:
     expression: weight_lep1_MuonID_SF_TightID_Trk{scale}_rel * weight_lep2_MuonID_SF_TightID_Trk{scale}_rel * final_weight
-    name: CMS_eff_m_id_{}
+    name: CMS_eff_m_id_2023BPix_{}
   # MuonID_TightID:
   #   expression: weight_lep1_MuonID_SF_TightID_Trk{scale}_rel * weight_lep2_MuonID_SF_TightID_Trk{scale}_rel * final_weight
   #   name: MuonID_TightID_{}
@@ -16,14 +16,14 @@ norm:
   #   name: MuonID_TightIDIso_{}
   EleID_TightIDIso:
     expression: weight_lep1_EleSF_wp80iso_EleID{scale}_rel * weight_lep2_EleSF_wp80iso_EleID{scale}_rel * final_weight
-    name: EleID_TightIDIso_{}
+    name: EleID_TightIDIso_2023BPix_{}
 
   SingleEleTrg:
     expression: weight_lep1_TrgSF_singleEleWpTight_singleEle{scale}_rel * weight_lep2_TrgSF_singleEleWpTight_singleEle{scale}_rel * final_weight
-    name: SingleEleTrg_{}
+    name: SingleEleTrg_2023BPix_{}
   SingleMuonTrg:
     expression: weight_lep1_TrgSF_singleIsoMu_IsoMu24{scale}_rel * weight_lep2_TrgSF_singleIsoMu_IsoMu24{scale}_rel * final_weight
-    name: SingleMuonTrg_{}
+    name: SingleMuonTrg_2023BPix_{}
 
   # BTV b-tagging shape calibration. The variations are stored as ratio-to-central
   # (Corrections/btag.py, getBTagShapeSF) and are already renormalised per
@@ -71,18 +71,18 @@ norm:
   # a missing UpdateBtagWeight-style step. Hbb applies only to hadronFlavour == 5 and
   # Hcc only to == 4 (FatJetCorrProvider::sourceApplies), so Hcc is small for most
   # processes and may fall under the canIgnore threshold in many categories.
-  # Left correlated across eras for now even though the calibration is derived per
-  # era: these are stage 2 of the decorrelation, to be decided on impacts once the
-  # prescribed sources (btag stats, pileup, JER) have been split.
+  # Decorrelated per era: Corrections/fatjet.py selects one of four separate
+  # calibration files (ak8_sf_corrections_bbww_combined_{2022_preEE, 2022_postEE,
+  # 2023_preBPix, 2023_postBPix}), so these are four independent fits.
   fatJetSF_Hbb:
     expression: "(boosted ? weight_FatJetSF_Hbb{scale}_rel : 1.0f) * final_weight"
-    name: CMS_bbww_ak8_Hbb_{}
+    name: CMS_bbww_ak8_Hbb_2023BPix_{}
   fatJetSF_Hcc:
     expression: "(boosted ? weight_FatJetSF_Hcc{scale}_rel : 1.0f) * final_weight"
-    name: CMS_bbww_ak8_Hcc_{}
+    name: CMS_bbww_ak8_Hcc_2023BPix_{}
   fatJetSF_tau21:
     expression: "(boosted ? weight_FatJetSF_tau21{scale}_rel : 1.0f) * final_weight"
-    name: CMS_bbww_ak8_tau21_{}
+    name: CMS_bbww_ak8_tau21_2023BPix_{}
 
 
 shape:
@@ -91,9 +91,9 @@ shape:
   JES_Total:
     name: CMS_scale_j_{}
   EleES:
-    name: CMS_scale_e_{}
+    name: CMS_scale_e_2023BPix_{}
   # Muon momentum scale/resolution. Applied at AnaTuple stage
   # (Corrections/MuonEnergyScale_corr.py); this registers the variation, which
   # the 2024+ era files already had and these four were missing.
   ScaRe:
-    name: CMS_ScaRe_mu_{}
+    name: CMS_ScaRe_mu_2023BPix_{}

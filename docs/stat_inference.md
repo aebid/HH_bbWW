@@ -140,10 +140,8 @@ nuisances rather than fixing them:
   for most processes and will fall under the `canIgnore` threshold in many categories.
 
 The calibration files are per-era and cover the four 2022/2023 eras only, so as with btag
-there is nothing to register for `Run3_2024`. Unlike the btag `*stats*` sources these are
-still correlated across eras even though the calibration is derived per era — they are the
-second stage of the decorrelation, to be decided on impacts once the sources with an
-explicit POG prescription have been split.
+there is nothing to register for `Run3_2024`. They are decorrelated per era for the same
+reason the btag `*stats*` sources are: four separate files means four independent fits.
 
 ### Where the binning is decided
 

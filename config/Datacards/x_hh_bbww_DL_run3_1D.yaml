@@ -117,18 +117,88 @@ uncertainties:
 
 
   # - name: MuonID_TightID
-  - name: CMS_eff_m_id
+  - name: CMS_eff_m_id_2022
     type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_eff_m_id_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_eff_m_id_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_eff_m_id_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
   # - name: MuonID_TightIDIso
-  - name: CMS_eff_m_id_iso
+  - name: CMS_eff_m_id_iso_2022
     type: shape
-  - name: EleID_TightIDIso
+    eras:
+      - Run3_2022
+  - name: CMS_eff_m_id_iso_2022EE
     type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_eff_m_id_iso_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_eff_m_id_iso_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: EleID_TightIDIso_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: EleID_TightIDIso_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: EleID_TightIDIso_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: EleID_TightIDIso_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
 
-  - name: SingleEleTrg
+  - name: SingleEleTrg_2022
     type: shape
-  - name: SingleMuonTrg
+    eras:
+      - Run3_2022
+  - name: SingleEleTrg_2022EE
     type: shape
+    eras:
+      - Run3_2022EE
+  - name: SingleEleTrg_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: SingleEleTrg_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: SingleMuonTrg_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: SingleMuonTrg_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: SingleMuonTrg_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: SingleMuonTrg_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
 
 
   # Decorrelated per era: the pileup profile and the minimum-bias cross section
@@ -231,19 +301,73 @@ uncertainties:
 
   # AK8 calibration, registered in config/Run3_*/weights.yaml. Neutralised at
   # weight level for resolved events, so canIgnore drops these outside boosted.
-  - name: CMS_bbww_ak8_Hbb
+  # Decorrelated: Corrections/fatjet.py loads one of four separate calibration files,
+  # so these are four independent fits.
+  - name: CMS_bbww_ak8_Hbb_2022
     type: shape
-  - name: CMS_bbww_ak8_Hcc
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_Hbb_2022EE
     type: shape
-  - name: CMS_bbww_ak8_tau21
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_Hbb_2023
     type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_Hbb_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_ak8_Hcc_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_Hcc_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_Hcc_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_Hcc_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_ak8_tau21_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_tau21_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_tau21_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_tau21_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
 
   - name: CMS_scale_j
     type: shape
-  # JER is measured per era, so it is decorrelated. JES (CMS_scale_j above) stays
-  # correlated for now: it is still the single `Total` source, and splitting the
-  # correlation sensibly requires the 11 regrouped JME sources first, which have
-  # their own per-source correlation rules.
+  # JER is measured per era, so it is decorrelated -- one source, one measurement
+  # per era, no ambiguity.
+  #
+  # JES (CMS_scale_j above) is the one source left correlated, and not because the
+  # question is open: `Total` is the quadrature sum of a family that JME prescribes
+  # be correlated (FlavorQCD, RelativeBal, HF, BBEC1, EC2, Absolute) and a per-year
+  # family (BBEC1_, Absolute_, EC2_, HF_, RelativeSample_ -- Corrections/jet.py).
+  # Whichever correlation is assigned to Total, one family is wrong: correlating it
+  # lets the fit constrain the year-dependent pieces coherently across four eras,
+  # decorrelating it averages FlavorQCD down as if it were four measurements. It is
+  # kept correlated because FlavorQCD dominates for a bb final state and diluting it
+  # is the worse error. The real fix is switching JetCorrProducer to the regrouped
+  # sources -- note `use_regrouped` is never passed (Corrections/Corrections.py), so
+  # that needs a code change and a full anaTuple re-production, not a config flip.
   - name: CMS_res_j_2022
     type: shape
     eras:
@@ -260,14 +384,43 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023BPix
-  - name: CMS_scale_e
+  - name: CMS_scale_e_2022
     type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_scale_e_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_scale_e_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_scale_e_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
   # Muon momentum scale/resolution. Registered in config/Run3_<era>/weights.yaml as
   # ScaRe; the correction was already applied at AnaTuple stage for these eras but no
   # variation was ever produced, so the analysis had an electron energy scale nuisance
-  # and no muon counterpart. Left correlated across eras alongside CMS_scale_e.
-  - name: CMS_ScaRe_mu
+  # and no muon counterpart. Decorrelated: MuonEnergyScale_corr.py loads a per-period
+  # JSON, so like CMS_scale_e it is a per-era measurement.
+  - name: CMS_ScaRe_mu_2022
     type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_ScaRe_mu_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_ScaRe_mu_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_ScaRe_mu_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
 
 
   # For multiple values, Konstantin says do [ down, up ]
