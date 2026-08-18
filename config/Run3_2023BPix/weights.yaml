@@ -1,9 +1,9 @@
 norm:
   PileUp_Lumi_MC:
     expression: weight_base_pu{scale}_rel  * final_weight
-    name: CMS_pileup_{}
+    name: CMS_pileup_2023BPix_{}
   MuonID_SF_Iso_ID:
-    expression: weight_lep1_MuonID_SF_TightPFIso_TightID{scale}_rel * weight_lep2_MuonID_SF_TightPFIso_TightID{scale}_rel * final_weight
+    expression: weight_lep1_MuonID_SF_LoosePFIso_TightID{scale}_rel * weight_lep2_MuonID_SF_LoosePFIso_TightID{scale}_rel * final_weight
     name: CMS_eff_m_id_iso_{}
   MuonID_SF_ID:
     expression: weight_lep1_MuonID_SF_TightID_Trk{scale}_rel * weight_lep2_MuonID_SF_TightID_Trk{scale}_rel * final_weight
@@ -17,9 +17,6 @@ norm:
   EleID_TightIDIso:
     expression: weight_lep1_EleSF_wp80iso_EleID{scale}_rel * weight_lep2_EleSF_wp80iso_EleID{scale}_rel * final_weight
     name: EleID_TightIDIso_{}
-  EleID_TightIDNoIso:
-    expression: weight_lep1_EleSF_wp80noiso_EleID{scale}_rel * weight_lep2_EleSF_wp80noiso_EleID{scale}_rel * final_weight
-    name: EleID_TightIDNoIso_{}
 
   SingleEleTrg:
     expression: weight_lep1_TrgSF_singleEleWpTight_singleEle{scale}_rel * weight_lep2_TrgSF_singleEleWpTight_singleEle{scale}_rel * final_weight
@@ -28,11 +25,75 @@ norm:
     expression: weight_lep1_TrgSF_singleIsoMu_IsoMu24{scale}_rel * weight_lep2_TrgSF_singleIsoMu_IsoMu24{scale}_rel * final_weight
     name: SingleMuonTrg_{}
 
+  # BTV b-tagging shape calibration. The variations are stored as ratio-to-central
+  # (Corrections/btag.py, getBTagShapeSF) and are already renormalised per
+  # (channel, nJet) by btagShapeWeightCorrector.UpdateBtagWeight, so they multiply
+  # final_weight directly. GetWeight (Analysis/hh_bbww.py) folds
+  # weight_bTagShape_Central into the *resolved* branch only of its
+  # `boosted ? ... : ...` expression -- boosted events carry weight_FatJetSF_Central
+  # instead -- so the variation has to be neutralised for boosted events, otherwise
+  # it would scale them by an unrelated resolved-jet ratio.
+  # Following the BTV prescription, the four *stats* sources are decorrelated per
+  # era -- their names carry the era suffix below, and the datacard declares one
+  # scoped entry per era. LF, HF and the two cferr sources stay correlated and keep
+  # an unsuffixed name. The suffix has to be applied here rather than in the datacard
+  # because the nuisance name is also the histogram name. See docs/stat_inference.md.
+  bTagShape_lf:
+    expression: "(boosted ? 1.0f : weight_bTagShape_lf{scale}_rel) * final_weight"
+    name: CMS_btag_LF_{}
+  bTagShape_hf:
+    expression: "(boosted ? 1.0f : weight_bTagShape_hf{scale}_rel) * final_weight"
+    name: CMS_btag_HF_{}
+  bTagShape_lfstats1:
+    expression: "(boosted ? 1.0f : weight_bTagShape_lfstats1{scale}_rel) * final_weight"
+    name: CMS_btag_lfstats1_2023BPix_{}
+  bTagShape_lfstats2:
+    expression: "(boosted ? 1.0f : weight_bTagShape_lfstats2{scale}_rel) * final_weight"
+    name: CMS_btag_lfstats2_2023BPix_{}
+  bTagShape_hfstats1:
+    expression: "(boosted ? 1.0f : weight_bTagShape_hfstats1{scale}_rel) * final_weight"
+    name: CMS_btag_hfstats1_2023BPix_{}
+  bTagShape_hfstats2:
+    expression: "(boosted ? 1.0f : weight_bTagShape_hfstats2{scale}_rel) * final_weight"
+    name: CMS_btag_hfstats2_2023BPix_{}
+  bTagShape_cferr1:
+    expression: "(boosted ? 1.0f : weight_bTagShape_cferr1{scale}_rel) * final_weight"
+    name: CMS_btag_cferr1_{}
+  bTagShape_cferr2:
+    expression: "(boosted ? 1.0f : weight_bTagShape_cferr2{scale}_rel) * final_weight"
+    name: CMS_btag_cferr2_{}
+
+  # AK8 (fatbjet) calibration, Corrections/fatjet.py. Mirror image of the btag block
+  # above: GetWeight folds weight_FatJetSF_Central into the *boosted* branch only, so
+  # here the guard is inverted and it is the resolved events that are neutralised.
+  # Unlike the btag shape weights these are not renormalised anywhere, so they carry a
+  # genuine normalisation component -- that is the correction behaving as intended, not
+  # a missing UpdateBtagWeight-style step. Hbb applies only to hadronFlavour == 5 and
+  # Hcc only to == 4 (FatJetCorrProvider::sourceApplies), so Hcc is small for most
+  # processes and may fall under the canIgnore threshold in many categories.
+  # Left correlated across eras for now even though the calibration is derived per
+  # era: these are stage 2 of the decorrelation, to be decided on impacts once the
+  # prescribed sources (btag stats, pileup, JER) have been split.
+  fatJetSF_Hbb:
+    expression: "(boosted ? weight_FatJetSF_Hbb{scale}_rel : 1.0f) * final_weight"
+    name: CMS_bbww_ak8_Hbb_{}
+  fatJetSF_Hcc:
+    expression: "(boosted ? weight_FatJetSF_Hcc{scale}_rel : 1.0f) * final_weight"
+    name: CMS_bbww_ak8_Hcc_{}
+  fatJetSF_tau21:
+    expression: "(boosted ? weight_FatJetSF_tau21{scale}_rel : 1.0f) * final_weight"
+    name: CMS_bbww_ak8_tau21_{}
+
 
 shape:
   JER:
-    name: CMS_res_j_{}
+    name: CMS_res_j_2023BPix_{}
   JES_Total:
     name: CMS_scale_j_{}
   EleES:
     name: CMS_scale_e_{}
+  # Muon momentum scale/resolution. Applied at AnaTuple stage
+  # (Corrections/MuonEnergyScale_corr.py); this registers the variation, which
+  # the 2024+ era files already had and these four were missing.
+  ScaRe:
+    name: CMS_ScaRe_mu_{}

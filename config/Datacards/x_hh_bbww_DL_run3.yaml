@@ -199,9 +199,27 @@ processes:
   # - W
   # - Other
 uncertainties:
-  - name: lumi_13p6TeV
+  # Split per year rather than per era: the luminosity calibration is a per-year
+  # measurement, so 2022 and 2022EE share a nuisance and 2023 and 2023BPix share
+  # another. This is lnN, so it needs nothing from the producer -- the meta-era lnN
+  # path already evaluates `eras:` against the sub-eras.
+  #
+  # NOTE: both magnitudes are still the old flat 1.4%. Only the correlation model has
+  # been fixed here; the per-year values need to be taken from the current LUM
+  # recommendation (which also splits a correlated from an uncorrelated component,
+  # not implemented here).
+  - name: lumi_13p6TeV_2022
     type: lnN
+    eras:
+      - Run3_2022
+      - Run3_2022EE
     value: 0.014 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
+  - name: lumi_13p6TeV_2023
+    type: lnN
+    eras:
+      - Run3_2023
+      - Run3_2023BPix
+    value: 0.014 # TODO: per-year LUM value
 
 
   # - name: MuonID_TightID
@@ -218,25 +236,26 @@ uncertainties:
   - name: SingleMuonTrg
     type: shape
 
-  # - name: CMS_pileup_2022
-  #   type: shape
-  #   eras:
-  #     - Run3_2022
-  # - name: CMS_pileup_2022EE
-  #   type: shape
-  #   eras:
-  #     - Run3_2022EE
-  # - name: CMS_pileup_2023
-  #   type: shape
-  #   eras:
-  #     - Run3_2023
-  # - name: CMS_pileup_2023BPix
-  #   type: shape
-  #   eras:
-  #     - Run3_2023BPix
 
-  - name: CMS_pileup
+  # Decorrelated per era: the pileup profile and the minimum-bias cross section
+  # are derived per era. The era suffix is produced by config/Run3_<era>/weights.yaml
+  # -- the nuisance name is also the histogram name, so it cannot be added here.
+  - name: CMS_pileup_2022
     type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_pileup_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_pileup_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_pileup_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
 
   # BTV shape calibration, registered in config/Run3_*/weights.yaml. Correlated
   # across the four Run 3 eras -- the BTV per-era split of the *stats* sources needs
@@ -247,14 +266,70 @@ uncertainties:
     type: shape
   - name: CMS_btag_HF
     type: shape
-  - name: CMS_btag_lfstats1
+  - name: CMS_btag_lfstats1_2022
     type: shape
-  - name: CMS_btag_lfstats2
+    eras:
+      - Run3_2022
+  - name: CMS_btag_lfstats1_2022EE
     type: shape
-  - name: CMS_btag_hfstats1
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_lfstats1_2023
     type: shape
-  - name: CMS_btag_hfstats2
+    eras:
+      - Run3_2023
+  - name: CMS_btag_lfstats1_2023BPix
     type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_btag_lfstats2_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_lfstats2_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_lfstats2_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_lfstats2_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_btag_hfstats1_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_hfstats1_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_hfstats1_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_hfstats1_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_btag_hfstats2_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_hfstats2_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_hfstats2_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_hfstats2_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
   - name: CMS_btag_cferr1
     type: shape
   - name: CMS_btag_cferr2
@@ -271,9 +346,33 @@ uncertainties:
 
   - name: CMS_scale_j
     type: shape
-  - name: CMS_res_j
+  # JER is measured per era, so it is decorrelated. JES (CMS_scale_j above) stays
+  # correlated for now: it is still the single `Total` source, and splitting the
+  # correlation sensibly requires the 11 regrouped JME sources first, which have
+  # their own per-source correlation rules.
+  - name: CMS_res_j_2022
     type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_res_j_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_res_j_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_res_j_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
   - name: CMS_scale_e
+    type: shape
+  # Muon momentum scale/resolution. Registered in config/Run3_<era>/weights.yaml as
+  # ScaRe; the correction was already applied at AnaTuple stage for these eras but no
+  # variation was ever produced, so the analysis had an electron energy scale nuisance
+  # and no muon counterpart. Left correlated across eras alongside CMS_scale_e.
+  - name: CMS_ScaRe_mu
     type: shape
 
 
@@ -309,7 +408,13 @@ uncertainties:
     type: lnN
     processes:
       - VV
-    value: 0.005 # This was uncertainty from XSDB
+    # WARNING: this is not a QCD scale uncertainty. XSDB's `unc` field is an absolute
+    # uncertainty in pb on its own Monte-Carlo integration, and 0.005 is just that
+    # number divided by the cross section (WW 0.3733/80.23 = 0.47%, WZ 0.1318/29.1 =
+    # 0.45%, ZZ 0.0649/12.75 = 0.51%; FLAF/config/crossSections13p6TeV.yaml:1051-1209).
+    # The real NNLO diboson scale uncertainty is several percent. Needs replacing with a
+    # number from the diboson theory reference; left as-is rather than guessed.
+    value: 0.005
 
   - name: PDF_alphas
     hasMultipleValues: True
