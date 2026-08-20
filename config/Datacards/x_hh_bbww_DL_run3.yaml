@@ -21,18 +21,12 @@ channels:
   - muMu
   - eMu
   - eE
-# Base categories only. HistRebinTask cuts each into `binning.n_dnn_slices`
-# DNN-significance slices, each carrying its own rebinned HME shape, and the datacard
-# bins (SR/res2b_dnn0, ...) are derived from the two -- so the bin list cannot fall out
-# of step with the slice count.
 categories:
   - SR/res2b
   - SR/boosted
   - SR/recovery
-
-# Rebinning configuration, read by HistRebinTask (and by the datacard/plot steps for the
-# slice count). Stated here rather than left to code defaults because what a slice has to
-# be worth keeping depends on this analysis's sample sizes and selection.
+ 
+# Rebinning configuration done inside HistRebinTask
 binning:
   n_dnn_slices: 4
   max_mass_bins: 10
@@ -40,154 +34,62 @@ binning:
   min_mass_bkg_each: 0.01
   min_signal: 0.5
 
-  # Guards against statistically starved backgrounds (DY in the b-tagged muMu/eE
-  # slices, where a couple of high-weight aMC@NLO events carry the whole yield)
-  # dictating the binning. min_bkg_neff: effective MC entries the summed background
-  # must have for a DNN boundary to be selectable. min_bkg_frac: backgrounds below
-  # this fraction of the total are exempt from min_mass_bkg_each, so a minor process
-  # cannot veto every split and collapse a slice to one mass bin.
+  # Minimum effective MC entries of summed background for a DNN slice
   min_bkg_neff: 4.0
+  # Backgrounds below this fraction of the total are skipped in the min_mass_bkg_each check
   min_bkg_frac: 0.05
 
-  # min_bkg_neff above gates only the DNN slice boundaries. These gate the mass bins
-  # inside each slice, which is where essentially every fit bin lives:
-  # min_mass_bkg_neff applies the same effective-entry floor per mass bin, and
-  # bkg_per_mass_bin caps the bin count at B_slice/bkg_per_mass_bin instead of always
-  # using max_mass_bins.
-  #
-  # A 4-variant scan on the Run3_Early combined limit set these values. With the mass
-  # bins ungated (min_mass_bkg_neff=0, bkg_per_mass_bin=0, mode="sb") the median
-  # per-bin background N_eff was 2.8 and 63% of fit bins sat below 4, and slices
-  # holding ~1.5 background events were still split into 10 bins. Turning all three on
-  # costs ~12% in mean expected limit (~20-25% above 800 GeV) -- that is the optimistic
-  # bias the ungated binning was buying by placing edges on MC fluctuations. Isolated
-  # effects: N_eff gate 0.994, bin budget 1.087, Asimov FOM 1.036.
+  # Minimum effective MC entries of summed background for a mass bin
   min_mass_bkg_neff: 4.0
+  # Total summed background for each mass bin if possible, overrides max_mass_bins
   bkg_per_mass_bin: 5.0
   significance_mode: asimov
 
-  # Per-process floors on the DNN slice boundaries themselves. min_bkg_neff above gates
-  # only the *summed* background, which turns out never to bind: over the 232 eE/muMu SR
-  # slices the summed N_eff never once fell below 4, while DY individually sat below it in
-  # 42% of them. A background that has fluctuated negative is simply invisible inside a
-  # healthy total -- muMu/SR/res2b at m500 selected a window holding DY = -5.87 +- 8.92
-  # because the sum there was +39.9 +- 9.0 -- and that slice cannot be made into a datacard
-  # at all, since resolveNegativeBins rejects a negative integral outright.
-  #
-  # min_dnn_bkg_each is the min_mass_bkg_each analogue, and does the real work: requiring
-  # every non-negligible background to be positive in every slice removes all 7 such slices
-  # in Run3_Early for -0.16% of the total combined Asimov Z (39.103 -> 39.042). The worst
-  # single category is muMu/res2b at m500, -2.3%: the binner had been choosing left edge 68
-  # (Z 0.834, DY -5.87) over 67 (Z 0.775, DY +7.31), i.e. the downward fluctuation was
-  # actively preferred because it lowers B in S/sqrt(B + sigma_B^2).
-  #
-  # min_dnn_bkg_neff is the stronger version, requiring those backgrounds to be *measured*
-  # rather than merely positive, and is left off: at a threshold of 4 it costs 35% of the
-  # Asimov Z in muMu/res2b at m500, because the whole signal-like region of that category
-  # holds only N_eff 5.2 of DY in total and cannot be split three ways above the threshold.
-  # Backgrounds below min_bkg_frac of the category total are exempt from both.
+  # Minimum yield on each background in a DNN slice, if it is above min_bkg_frac of the total
   min_dnn_bkg_each: 0.01
+  # Minimum yield on each background in a DNN slice (yield instead of just positive)
   min_dnn_bkg_neff: 0.0
+
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
+
   - process: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
     hist_name: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
     param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
     is_signal: true
-    # A sparse (channel, category, MX) signal region can have a shape
-    # systematic (e.g. CMS_eff_m_id up/down) that shifts all surviving MC
-    # events out of the rebinned range entirely -- a genuine all-zero shape,
-    # not a negative-bin issue. Allow it; resolveType/canIgnore downstream
-    # decides whether the systematic is negligible.
     allow_zero_integral: true
+
   - process: XtoHHto2Tau2B_${MX}
     hist_name: XtoHHto2Tau2B_${MX}
     param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
     is_signal: true
-    # X -> HH -> bb tautau also reaches this dilepton selection (tau -> l nu nu),
-    # so it is signal here rather than background, scaled by the same signal
-    # strength as the bbWW mode. It is a much smaller contribution and can be
-    # entirely empty in a sparse (channel, category, MX) slice.
     allow_zero_integral: true
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
+
   - process: TT
-    # Sparse tail DNN slices (e.g. the recovery/dnn3 catch-all bin) have low
-    # enough MC statistics that a shape systematic's up/down variation can
-    # dip a bin negative within error -- same statistical-noise pattern as
-    # DY/VV below, not specific to any one background.
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
+
   - process: DY
     channels:
       - eE
       - muMu
-    # DY's aMC@NLO negative-weight events can push a single era's shape
-    # negative within error in any category, not just sparse ones like
-    # boosted -- seen in res2b too for standalone single-era datacards.
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
+
   - process: VV
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
     allow_zero_integral: true
+
   - process: ST
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
-  # Single merged background template for the boosted slices, all three channels.
-  #
-  # Why: DY has no usable MC statistics in the b-tagged same-flavour categories.
-  # Measured on Run3_Early (v2605a), summed over the four sub-eras, DY's effective
-  # MC count (yield/error)^2 has a median of 5.8 across the 232 eE/muMu SR slices
-  # and sits below the binning's own min_bkg_neff of 4 in 42% of them, with several
-  # slices going negative outright. TT, ST and VV are all fine on their own (median
-  # N_eff 471 / 211 / 97, never below 4). So this is a DY problem, not a binning
-  # granularity problem -- there is no 4-slice DNN binning of eE/muMu in which DY is
-  # individually well measured, and merging DNN slices to chase it only buys a
-  # positive number that is still statistically meaningless.
-  #
-  # Why all four rather than only the small ones: over the 64 boosted slices,
-  # merging DY+ST+VV alone leaves 2 negative bins (eE/SR/boosted_dnn1 at m500);
-  # including TT leaves none anywhere. Those last 2 bins are consistent with zero
-  # and have 10x their size in positive donors, but the mass axis is binned by equal
-  # signal quantiles, so every bin of an n<=5 bin slice holds >= 1/n >= 20% of the
-  # signal and is therefore "relevant" under signalFractionForRelevantBins: 0.2 --
-  # and resolveNegativeBins rejects a negative relevant bin unconditionally,
-  # regardless of allow_negative_bins_within_error. Merging TT in as well avoids
-  # relying on that interaction at all: no negative bins, nothing to tolerate.
-  #
-  # Cost, stated plainly: boosted has one background rate instead of four, so TT
-  # cannot float independently there and the template's composition is frozen at the
-  # MC prediction. Accepted because boosted holds 2-80 background events per slice
-  # with no dedicated control region, and because autoMCStats (threshold 20, mode 1)
-  # was already pooling these bins' MC-stat uncertainty across processes.
-  #
-  # `subprocesses` naming other datacard processes replaces them here, so TT, DY, ST
-  # and VV keep their configuration above and simply do not enter the boosted bins.
-  #
-  # eMu is included as well. DY is restricted to eE/muMu in its own entry above and
-  # was therefore missing from eMu's boosted background entirely -- not because it is
-  # negligible there: over the 32 eMu boosted slices DY is 0.5% to 32% of the total
-  # background (median 6.5%), with N_eff 1.2-22 (median 5.9, a third of slices below
-  # 4). Merging is what lets it be counted, since the merged shape is assembled from
-  # subprocess histograms by path and does not consult DY's own channel list. So eMu
-  # boosted gains a real background it was previously missing, its DY never has to
-  # stand on its own statistics, and all three channels now describe their boosted
-  # background the same way. Folding DY in leaves zero negative bins in all 32 eMu
-  # slices. DY remains absent from eMu res2b/recovery, which are unchanged.
-  #
-  # Caveat: QCD_scale_TT/DY/ST/VV each match this process through its subprocesses
-  # (Uncertainty.appliesTo) and so apply to the whole merged yield rather than to
-  # their own constituent's share. TT dominates boosted, so QCD_scale_TT is roughly
-  # right; the other three over-cover. Net effect is a ~4.4% XS uncertainty where a
-  # yield-weighted treatment would give ~3% -- conservative, and small next to the
-  # MC-statistical noise this merge exists to remove.
-  #
-  # No negative-bin tolerance is set below on purpose: there are no negative bins to
-  # tolerate, and this template builds under the unmodified resolveNegativeBins.
+  # Merged background template for boosted slices as MC yield is extremely low
   - process: TotalBkg
     subprocesses:
       - TT
@@ -196,18 +98,11 @@ processes:
       - VV
     categories:
       - SR/boosted
+
   # - W
   # - Other
+
 uncertainties:
-  # Split per year rather than per era: the luminosity calibration is a per-year
-  # measurement, so 2022 and 2022EE share a nuisance and 2023 and 2023BPix share
-  # another. This is lnN, so it needs nothing from the producer -- the meta-era lnN
-  # path already evaluates `eras:` against the sub-eras.
-  #
-  # NOTE: both magnitudes are still the old flat 1.4%. Only the correlation model has
-  # been fixed here; the per-year values need to be taken from the current LUM
-  # recommendation (which also splits a correlated from an uncorrelated component,
-  # not implemented here).
   - name: lumi_13p6TeV_2022
     type: lnN
     eras:
@@ -219,7 +114,7 @@ uncertainties:
     eras:
       - Run3_2023
       - Run3_2023BPix
-    value: 0.014 # TODO: per-year LUM value
+    value: 0.013 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
 
   # Muon ID
   - name: CMS_eff_m_id_2022
@@ -460,22 +355,23 @@ uncertainties:
     eras:
       - Run3_2023BPix
 
-  - name: CMS_scale_j
+  - name: CMS_scale_j_2022
     type: shape
-  # JER is measured per era, so it is decorrelated -- one source, one measurement
-  # per era, no ambiguity.
-  #
-  # JES (CMS_scale_j above) is the one source left correlated, and not because the
-  # question is open: `Total` is the quadrature sum of a family that JME prescribes
-  # be correlated (FlavorQCD, RelativeBal, HF, BBEC1, EC2, Absolute) and a per-year
-  # family (BBEC1_, Absolute_, EC2_, HF_, RelativeSample_ -- Corrections/jet.py).
-  # Whichever correlation is assigned to Total, one family is wrong: correlating it
-  # lets the fit constrain the year-dependent pieces coherently across four eras,
-  # decorrelating it averages FlavorQCD down as if it were four measurements. It is
-  # kept correlated because FlavorQCD dominates for a bb final state and diluting it
-  # is the worse error. The real fix is switching JetCorrProducer to the regrouped
-  # sources -- note `use_regrouped` is never passed (Corrections/Corrections.py), so
-  # that needs a code change and a full anaTuple re-production, not a config flip.
+    eras:
+      - Run3_2022
+  - name: CMS_scale_j_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_scale_j_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_scale_j_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
   - name: CMS_res_j_2022
     type: shape
     eras:
@@ -589,24 +485,6 @@ autoMCStats:
   apply_to_signal: true
   mode: 1
 
-# Overlay limit plots built by PlotResonantLimitsTask, one dhi
-# PlotMultipleResonantLimits per entry, for each top-level era in `eras` above.
-#
-# Each `datacards` glob is relative to that era's datacard directory
-# (data/<version>/Datacards[/<binning tag>]/<era>) and may use ${ERA}. The layout it
-# addresses is the one DatacardMaker.writeDatacards produces: the era-combined cards sit
-# at the top, per-channel cards under <era>/<channel>/, and per-base-category cards under
-# <era>/categories/<CAT>/.
-#
-# `name` values must not contain braces -- law brace-expands datacard_names, so "fb^{-1}"
-# would arrive as "fb^-1". Put that information in the campaign label instead.
-# `plot_params` keys are passed straight through to PlotMultipleResonantLimits.
-
-# dhi campaign key per era, supplying the luminosity/energy label. Every era listed in
-# `eras` above that is plotted needs one: it cannot be derived from the era name, and dhi
-# draws an unknown key verbatim rather than failing. Keys come from
-# dhi.config.campaign_labels; the sub-era entries there are named by year, not by the
-# FLAF period name.
 campaigns:
   Run3_Early: run3_early
   Run3_2022: "2022preEE"
@@ -616,26 +494,15 @@ campaigns:
 
 limit_plots:
   - name: run3_vs_run2
-    # Also draw the standard single-curve plot with the +-1/+-2 sigma bands, which the
-    # overlay cannot show. This entry's one curve is the full combined result, so this is
-    # the headline limit plot. The external Run 2 limits and the projection below are
-    # separate curves rather than datacards, so they appear only on the overlay.
+    # Draw 1/2 sigma bands
     bands: true
     datacards:
       - { name: "Early Run 3", glob: "*.txt" }
-    # Statistical extrapolation of the curve above, recomputed from the limits produced
-    # by this very run -- it is a function of the measured result, so it must never be a
-    # stored file that survives a rebinning. lumi_now defaults to the campaign's own
-    # luminosity (dhi.config.campaign_lumis), so it cannot disagree with the label drawn
-    # beside it. Optimistic: the scaling assumes the systematics shrink with the data.
     lumi_projections:
       - name: "Early Run 3 scaled to 138 fb^{-1}"
         lumi_target: 138
     external_limits:
       - config/Datacards/run2_spin0_DL_external_limits.json
-    # campaign is filled per era from the `campaigns` map above, so it is deliberately
-    # absent here -- putting it in this shared anchor would stamp one era's luminosity
-    # on every era's plot.
     plot_params: &limit_plot_style
       xsec: pb
       y_log: true
