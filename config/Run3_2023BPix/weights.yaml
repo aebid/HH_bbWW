@@ -2,18 +2,14 @@ norm:
   PileUp_Lumi_MC:
     expression: weight_base_pu{scale}_rel  * final_weight
     name: CMS_pileup_2023BPix_{}
+
   MuonID_SF_Iso_ID:
     expression: weight_lep1_MuonID_SF_LoosePFIso_TightID{scale}_rel * weight_lep2_MuonID_SF_LoosePFIso_TightID{scale}_rel * final_weight
     name: CMS_eff_m_id_iso_2023BPix_{}
   MuonID_SF_ID:
     expression: weight_lep1_MuonID_SF_TightID_Trk{scale}_rel * weight_lep2_MuonID_SF_TightID_Trk{scale}_rel * final_weight
     name: CMS_eff_m_id_2023BPix_{}
-  # MuonID_TightID:
-  #   expression: weight_lep1_MuonID_SF_TightID_Trk{scale}_rel * weight_lep2_MuonID_SF_TightID_Trk{scale}_rel * final_weight
-  #   name: MuonID_TightID_{}
-  # MuonID_TightIDIso:
-  #   expression: weight_lep1_MuonID_SF_LoosePFIso{scale}_rel * weight_lep2_MuonID_SF_LoosePFIso{scale}_rel * final_weight
-  #   name: MuonID_TightIDIso_{}
+
   EleID_TightIDIso:
     expression: weight_lep1_EleSF_wp80iso_EleID{scale}_rel * weight_lep2_EleSF_wp80iso_EleID{scale}_rel * final_weight
     name: EleID_TightIDIso_2023BPix_{}
@@ -25,19 +21,6 @@ norm:
     expression: weight_lep1_TrgSF_singleIsoMu_IsoMu24{scale}_rel * weight_lep2_TrgSF_singleIsoMu_IsoMu24{scale}_rel * final_weight
     name: SingleMuonTrg_2023BPix_{}
 
-  # BTV b-tagging shape calibration. The variations are stored as ratio-to-central
-  # (Corrections/btag.py, getBTagShapeSF) and are already renormalised per
-  # (channel, nJet) by btagShapeWeightCorrector.UpdateBtagWeight, so they multiply
-  # final_weight directly. GetWeight (Analysis/hh_bbww.py) folds
-  # weight_bTagShape_Central into the *resolved* branch only of its
-  # `boosted ? ... : ...` expression -- boosted events carry weight_FatJetSF_Central
-  # instead -- so the variation has to be neutralised for boosted events, otherwise
-  # it would scale them by an unrelated resolved-jet ratio.
-  # Following the BTV prescription, the four *stats* sources are decorrelated per
-  # era -- their names carry the era suffix below, and the datacard declares one
-  # scoped entry per era. LF, HF and the two cferr sources stay correlated and keep
-  # an unsuffixed name. The suffix has to be applied here rather than in the datacard
-  # because the nuisance name is also the histogram name. See docs/stat_inference.md.
   bTagShape_lf:
     expression: "(boosted ? 1.0f : weight_bTagShape_lf{scale}_rel) * final_weight"
     name: CMS_btag_LF_{}
@@ -63,17 +46,6 @@ norm:
     expression: "(boosted ? 1.0f : weight_bTagShape_cferr2{scale}_rel) * final_weight"
     name: CMS_btag_cferr2_{}
 
-  # AK8 (fatbjet) calibration, Corrections/fatjet.py. Mirror image of the btag block
-  # above: GetWeight folds weight_FatJetSF_Central into the *boosted* branch only, so
-  # here the guard is inverted and it is the resolved events that are neutralised.
-  # Unlike the btag shape weights these are not renormalised anywhere, so they carry a
-  # genuine normalisation component -- that is the correction behaving as intended, not
-  # a missing UpdateBtagWeight-style step. Hbb applies only to hadronFlavour == 5 and
-  # Hcc only to == 4 (FatJetCorrProvider::sourceApplies), so Hcc is small for most
-  # processes and may fall under the canIgnore threshold in many categories.
-  # Decorrelated per era: Corrections/fatjet.py selects one of four separate
-  # calibration files (ak8_sf_corrections_bbww_combined_{2022_preEE, 2022_postEE,
-  # 2023_preBPix, 2023_postBPix}), so these are four independent fits.
   fatJetSF_Hbb:
     expression: "(boosted ? weight_FatJetSF_Hbb{scale}_rel : 1.0f) * final_weight"
     name: CMS_bbww_ak8_Hbb_2023BPix_{}
@@ -84,18 +56,10 @@ norm:
     expression: "(boosted ? weight_FatJetSF_tau21{scale}_rel : 1.0f) * final_weight"
     name: CMS_bbww_ak8_tau21_2023BPix_{}
 
-
 shape:
   JER:
     name: CMS_res_j_2023BPix_{}
   JES_Total:
-    name: CMS_scale_j_{}
+    name: CMS_scale_j_2023BPix_{}
   EleES:
     name: CMS_scale_e_2023BPix_{}
-  # NOT registered here on purpose: ScaRe (muon momentum scale). The anaTuples do
-  # carry Events__ScaRe__{Up,Down}, but a `shape:` source also needs the matching
-  # tree in every AnalysisCache the histTuple opens (DNN, DeepHME), and those were
-  # produced before ScaRe existed -- HistTupleProducer then dies with
-  # "tree Events__ScaRe__Up not found". Adding it means regenerating the caches,
-  # so it belongs with the next anaTuple production rather than a weights-only
-  # re-run. The 2024+ era files register it because their caches are newer.
