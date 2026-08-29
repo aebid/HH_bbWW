@@ -502,21 +502,28 @@ uncertainties:
   # XtoHHto2B2W_1L is the single-lepton signal and is not a process of this dilepton
   # card; it belongs in these lists when the SL card gains them. Single Higgs and VH
   # likewise, once they are added as processes.
+  #
+  # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
+  # with re.match, anything else compared literally). They have to be: by the time an
+  # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
+  # so the process is XtoHHto2B2W_2L_700 and a literal "XtoHHto2B2W_2L_${MX}" matches
+  # nothing at all -- silently, since an uncertainty that applies to no process is simply
+  # never added.
   - name: BR_hbb
     type: lnN
     processes:
-      - XtoHHto2B2W_2L_${MX}
-      - XtoHHto2Tau2B_${MX}
+      - ^XtoHHto2B2W_2L_
+      - ^XtoHHto2Tau2B_
     value: [ -0.0126, 0.0124 ]
   - name: BR_hww
     type: lnN
     processes:
-      - XtoHHto2B2W_2L_${MX}
+      - ^XtoHHto2B2W_2L_
     value: [ -0.0152, 0.0153 ]
   - name: BR_htt
     type: lnN
     processes:
-      - XtoHHto2Tau2B_${MX}
+      - ^XtoHHto2Tau2B_
     value: [ -0.0163, 0.0165 ]
 
 autolnNThr: 0.1
