@@ -98,22 +98,29 @@ uncertainties:
   # another. This is lnN, so it needs nothing from the producer -- the meta-era lnN
   # path already evaluates `eras:` against the sub-eras.
   #
-  # NOTE: both magnitudes are still the old flat 1.4%. Only the correlation model has
-  # been fixed here; the per-year values need to be taken from the current LUM
-  # recommendation (which also splits a correlated from an uncorrelated component,
-  # not implemented here).
-  - name: lumi_13p6TeV_2022
+  # As in x_hh_bbww_DL_run3.yaml: the Run 3 recommendation's component correlated across
+  # all four eras but sized per year group, plus a second component carried by 2023 alone.
+  # Reference: https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3?extralog=-%20caching%20topic#Correlations_between_years_and_c
+  - name: lumi_1_13p6TeV
+    hasMultipleValues: True
     type: lnN
-    eras:
-      - Run3_2022
-      - Run3_2022EE
-    value: 0.014 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
-  - name: lumi_13p6TeV_2023
+    value:
+      - value: 0.0138
+        type: lnN
+        eras:
+          - Run3_2022
+          - Run3_2022EE
+      - value: 0.0017
+        type: lnN
+        eras:
+          - Run3_2023
+          - Run3_2023BPix
+  - name: lumi_2_13p6TeV
     type: lnN
     eras:
       - Run3_2023
       - Run3_2023BPix
-    value: 0.014 # TODO: per-year LUM value
+    value: 0.0127
 
 
   # - name: MuonID_TightID
@@ -352,22 +359,37 @@ uncertainties:
     eras:
       - Run3_2023BPix
 
-  - name: CMS_scale_j
-    type: shape
-  # JER is measured per era, so it is decorrelated -- one source, one measurement
-  # per era, no ambiguity.
+  # JES and JER are both decorrelated per era, matching x_hh_bbww_DL_run3.yaml -- the two
+  # cards must agree here, or a limit difference between them reads as a binning effect
+  # when it is really a correlation one.
   #
-  # JES (CMS_scale_j above) is the one source left correlated, and not because the
-  # question is open: `Total` is the quadrature sum of a family that JME prescribes
-  # be correlated (FlavorQCD, RelativeBal, HF, BBEC1, EC2, Absolute) and a per-year
-  # family (BBEC1_, Absolute_, EC2_, HF_, RelativeSample_ -- Corrections/jet.py).
-  # Whichever correlation is assigned to Total, one family is wrong: correlating it
-  # lets the fit constrain the year-dependent pieces coherently across four eras,
-  # decorrelating it averages FlavorQCD down as if it were four measurements. It is
-  # kept correlated because FlavorQCD dominates for a bb final state and diluting it
-  # is the worse error. The real fix is switching JetCorrProducer to the regrouped
-  # sources -- note `use_regrouped` is never passed (Corrections/Corrections.py), so
-  # that needs a code change and a full anaTuple re-production, not a config flip.
+  # JER is unambiguous: measured per era, one measurement each.
+  #
+  # JES is a compromise either way. `Total` is the quadrature sum of a family JME
+  # prescribes be correlated (FlavorQCD, RelativeBal, HF, BBEC1, EC2, Absolute) and a
+  # per-year family (BBEC1_, Absolute_, EC2_, HF_, RelativeSample_ -- Corrections/jet.py),
+  # so whichever correlation is assigned to Total, one family is treated wrongly:
+  # decorrelating averages FlavorQCD down as if it were four independent measurements,
+  # correlating lets the fit constrain the year-dependent pieces coherently across four
+  # eras. The real fix is switching JetCorrProducer to the regrouped sources -- note
+  # `use_regrouped` is never passed (Corrections/Corrections.py), so that needs a code
+  # change and a full anaTuple re-production, not a config flip.
+  - name: CMS_scale_j_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_scale_j_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_scale_j_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_scale_j_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
   - name: CMS_res_j_2022
     type: shape
     eras:

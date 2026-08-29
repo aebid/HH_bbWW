@@ -103,18 +103,37 @@ processes:
   # - Other
 
 uncertainties:
-  - name: lumi_13p6TeV_2022
+  # Luminosity, as the Run 3 recommendation splits it: one component correlated across
+  # all four eras but with a different size in each year group, and a second carried by
+  # 2023 alone. Not a per-year uncorrelated pair -- that would treat the two year groups
+  # as independent, which they are not.
+  #
+  # lumi_1 is one nuisance whose value depends on the era. Under a meta-era the datacard
+  # maker cannot express that as a single lnN on the summed yield, so it builds the
+  # variation sub-era by sub-era and writes it as a shape; each sub-era contributes its
+  # own factor, and the ratio to nominal comes out as the yield-weighted blend.
+  #
+  # Reference: https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3?extralog=-%20caching%20topic#Correlations_between_years_and_c
+  - name: lumi_1_13p6TeV
+    hasMultipleValues: True
     type: lnN
-    eras:
-      - Run3_2022
-      - Run3_2022EE
-    value: 0.014 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
-  - name: lumi_13p6TeV_2023
+    value:
+      - value: 0.0138
+        type: lnN
+        eras:
+          - Run3_2022
+          - Run3_2022EE
+      - value: 0.0017
+        type: lnN
+        eras:
+          - Run3_2023
+          - Run3_2023BPix
+  - name: lumi_2_13p6TeV
     type: lnN
     eras:
       - Run3_2023
       - Run3_2023BPix
-    value: 0.013 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
+    value: 0.0127
 
   # Muon ID
   - name: CMS_eff_m_id_2022
@@ -475,6 +494,30 @@ uncertainties:
         type: lnN
         processes:
           - ST
+
+  # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
+  # which is what makes them apply everywhere. Values from
+  # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
+  #
+  # XtoHHto2B2W_1L is the single-lepton signal and is not a process of this dilepton
+  # card; it belongs in these lists when the SL card gains them. Single Higgs and VH
+  # likewise, once they are added as processes.
+  - name: BR_hbb
+    type: lnN
+    processes:
+      - XtoHHto2B2W_2L_${MX}
+      - XtoHHto2Tau2B_${MX}
+    value: [ -0.0126, 0.0124 ]
+  - name: BR_hww
+    type: lnN
+    processes:
+      - XtoHHto2B2W_2L_${MX}
+    value: [ -0.0152, 0.0153 ]
+  - name: BR_htt
+    type: lnN
+    processes:
+      - XtoHHto2Tau2B_${MX}
+    value: [ -0.0163, 0.0165 ]
 
 autolnNThr: 0.1
 asymlnNThr: 0.001

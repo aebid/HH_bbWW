@@ -77,6 +77,51 @@ file, not at the anaTuple. Checking the anaTuple alone is not sufficient. Adding
 `shape:` source means regenerating the caches, so it belongs with an anaTuple production
 rather than a weights-only re-run.
 
+#### Correlating and decorrelating across eras
+
+There is no `correlated:` switch. Combine correlates two entries when they carry the
+**same nuisance name** and treats them as independent when the names differ, so the whole
+correlation model is expressed by naming — and, because the nuisance name *is* the
+histogram name, it is `weights.yaml` that decides it, not the datacard configuration.
+
+A source decorrelated per era carries the era in its producer name, so the four eras write
+four different histograms:
+
+```yaml
+# config/Run3_2022/weights.yaml          config/Run3_2023/weights.yaml
+name: CMS_scale_j_2022_{}                name: CMS_scale_j_2023_{}
+```
+
+and the datacard configuration then declares one entry per era, each scoped with `eras:`:
+
+```yaml
+- name: CMS_scale_j_2022
+  type: shape
+  eras: [ Run3_2022 ]
+```
+
+A correlated source keeps one name in every era's `weights.yaml` (`CMS_btag_LF_{}`) and
+one entry in the datacard configuration **with no `eras:` field at all** — an empty era
+list matches everything, which is what makes it apply to all four.
+
+Two consequences worth knowing:
+
+- Renaming a source to decorrelate it changes a histogram name, so it costs a HistMerger
+  re-run. It does not need a new anaTuple production: the shifted trees are unchanged.
+- The two files must change together. Splitting `weights.yaml` without splitting the
+  datacard configuration leaves the card asking for a histogram nobody writes any more
+  (`Cannot find histogram ... CMS_scale_j_Up`), and it fails at datacard time rather than
+  at merge time — which is how the 1D card sat broken while the 2D one worked. Cross-check
+  every card's `type: shape` entries against the producers of each era it declares before
+  merging a correlation change.
+
+For a meta-era such as `Run3_Early`, a nuisance scoped to one sub-era still applies: it
+varies that sub-era's contribution to the summed shape while the others contribute their
+nominal. The same holds for an `lnN` whose value differs per sub-era — `lumi_1_13p6TeV` is
+written into the card as a shape for exactly that reason, since one log-normal on the
+summed yield cannot express a factor that changes between eras. An `lnN` that does not
+depend on the era stays an `lnN`.
+
 #### b-tagging shape calibration
 
 The BTV shape calibration contributes eight nuisances — `CMS_btag_LF`, `CMS_btag_HF`,
