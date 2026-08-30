@@ -46,6 +46,33 @@ norm:
     expression: "(boosted ? 1.0f : weight_bTagShape_cferr2{scale}_rel) * final_weight"
     name: CMS_btag_cferr2_{}
 
+  # DY reweighting derived in the hh2bbtautau phase space
+  # (Corrections/data/DY_corr_hbt/hbt_corrections_v2.json.gz). `requires` keeps the
+  # entry a no-op on processes the correction is not applied to -- it is configured
+  # with a `processes:` list in global.yaml, so its branches exist for DY only.
+  # The three stat sources are the statistical uncertainty of this era's own fit, so
+  # they carry the era; the two syst sources are fit-model variations and are
+  # correlated across eras.
+  DYw_stat_btag0:
+    requires: dy_hhbbtautau
+    expression: weight_dy_stat_btag0_{scale}_rel * final_weight
+    name: CMS_bbww_dy_stat_btag0_2023BPix_{}
+  DYw_stat_btag1:
+    requires: dy_hhbbtautau
+    expression: weight_dy_stat_btag1_{scale}_rel * final_weight
+    name: CMS_bbww_dy_stat_btag1_2023BPix_{}
+  DYw_stat_btag2:
+    requires: dy_hhbbtautau
+    expression: weight_dy_stat_btag2_{scale}_rel * final_weight
+    name: CMS_bbww_dy_stat_btag2_2023BPix_{}
+  DYw_syst_gauss:
+    requires: dy_hhbbtautau
+    expression: weight_dy_syst_gauss_{scale}_rel * final_weight
+    name: CMS_bbww_dy_syst_gauss_{}
+  DYw_syst_linear:
+    requires: dy_hhbbtautau
+    expression: weight_dy_syst_linear_{scale}_rel * final_weight
+    name: CMS_bbww_dy_syst_linear_{}
   fatJetSF_Hbb:
     expression: "(boosted ? weight_FatJetSF_Hbb{scale}_rel : 1.0f) * final_weight"
     name: CMS_bbww_ak8_Hbb_2023BPix_{}

@@ -324,6 +324,91 @@ uncertainties:
   - name: CMS_btag_cferr2
     type: shape
 
+  # DY reweighting (hh2bbtautau derivation). Scoped to DY: the correction is
+  # configured with a processes: list, so it is a no-op everywhere else.
+  # The per-era fit's statistical uncertainty is decorrelated by era; the two
+  # fit-model variations are correlated.
+  - name: CMS_bbww_dy_stat_btag0_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag0_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag0_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag0_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_stat_btag1_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag1_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag1_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag1_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_stat_btag2_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag2_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag2_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag2_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_syst_gauss
+    type: shape
+    processes:
+      - DY
+  - name: CMS_bbww_dy_syst_linear
+    type: shape
+    processes:
+      - DY
+
   # AK8 BTagging
   - name: CMS_bbww_ak8_Hbb_2022
     type: shape
