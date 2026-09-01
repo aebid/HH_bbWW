@@ -113,6 +113,8 @@ def GetWeight(
         weights_to_apply.append(f"{GetDYbbtautauReweight()}")
     if "dy_hhbbww" in weights_this_process:
         weights_to_apply.append(f"{GetDYbbwwReweight()}")
+    if "top_pt" in weights_this_process:
+        weights_to_apply.append(f"{GetTopPtReweight()}")
 
     # total_weight = "*".join(weights_to_apply)
     total_weight_resolved = "*".join(weights_to_apply + weights_to_apply_resolved)
@@ -140,6 +142,11 @@ def GetDYbbtautauReweight():
 def GetDYbbwwReweight():
     DY_bbww_weight = "weight_dy_hhbbww_central"
     return DY_bbww_weight
+
+
+def GetTopPtReweight():
+    top_pt_weight = "weight_top_pt_central"
+    return top_pt_weight
 
 
 def GetEleWeight(lep_index):

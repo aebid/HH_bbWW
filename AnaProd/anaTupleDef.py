@@ -576,6 +576,43 @@ def defineMCSpecificObservables(dfw):
             dfw.colToSave.append(var)
 
 
+def defineGenTopVariables(dfw):
+    """Gen-level top pT, for the top pT reweighting of ttbar.
+
+    The reweighting needs the `isLastCopy` parton-level top -- after radiation and
+    before decay (https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting, which is
+    explicit that a reco- or particle-level proxy gives an invalid reweighting). That
+    means GenPart, which is available here but is *not* written to the anaTuple, so
+    the two pT values have to be reduced and saved now. The LHEPart collection that
+    MCObservables does save is taken before radiation and is not a substitute.
+
+    Defined for every MC sample rather than for ttbar alone: it is two floats per
+    event, and deciding which samples are "ttbar" belongs in the correction config,
+    not here. Where no last-copy top pair exists -- every non-ttbar sample, and single
+    top, which has only one -- both branches stay at -1 and TopPtCorrProducer returns
+    a weight of 1.
+    """
+    # Tested as a bitwise mask rather than via GenStatusFlags::isLastCopy: a
+    # ROOT::VecOps::Map over a generic lambda deduces to void in the JIT context, and
+    # a lambda with an explicit parameter type would pin the NanoAOD storage type of
+    # GenPart_statusFlags, which varies between versions. The enum constant keeps the
+    # bit index from being a magic number.
+    dfw.Define(
+        "genPart_isLastCopy",
+        "(GenPart_statusFlags & (1 << GenStatusFlags::kIsLastCopy)) != 0",
+    )
+    for name, pdg_id in [("genTop", 6), ("genAntiTop", -6)]:
+        dfw.Define(
+            f"{name}_pt_lastCopy",
+            f"GenPart_pt[(GenPart_pdgId == {pdg_id}) && genPart_isLastCopy]",
+        )
+        dfw.DefineAndAppend(
+            f"{name}_pt",
+            f"{name}_pt_lastCopy.size() > 0 "
+            f"? static_cast<float>({name}_pt_lastCopy[0]) : -1.0f",
+        )
+
+
 def addAllVariables(
     dfw,
     syst_name,
@@ -627,6 +664,7 @@ def addAllVariables(
     defineMETVariables(dfw, global_params["met_type"])
     if not isData:
         defineMCSpecificObservables(dfw)
+        defineGenTopVariables(dfw)
 
     if trigger_class is not None:
         hltBranches = dfw.Apply(

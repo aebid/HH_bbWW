@@ -97,6 +97,15 @@ uncertainties:
       - Run3_2023BPix
 
 
+  # Top pT reweighting (https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting).
+  # One correction for every era, so it stays correlated: no `eras:` field, which is
+  # what makes it apply everywhere. Up/Down bracket applying the correction twice and
+  # not at all. Histograms come from the TopPtReweight entry in weights.yaml.
+  - name: CMS_bbww_top_pt
+    type: shape
+    processes:
+      - TT
+
   # For multiple values, Konstantin says do [ down, up ]
   - name: QCD_scale_TT
     type: lnN

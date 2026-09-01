@@ -73,6 +73,15 @@ norm:
     requires: dy_hhbbtautau
     expression: weight_dy_syst_linear_{scale}_rel * final_weight
     name: CMS_bbww_dy_syst_linear_{}
+
+  # Top pT reweighting, 100% of the correction: Down removes it, Up applies it twice.
+  # `requires` keeps the entry a no-op away from ttbar -- the correction carries a
+  # `processes:` list in global.yaml, so its branches exist for ttbar alone.
+  # No era suffix: one correction, correlated across eras.
+  TopPtReweight:
+    requires: top_pt
+    expression: weight_top_pt_{scale}_rel * final_weight
+    name: CMS_bbww_top_pt_{}
   fatJetSF_Hbb:
     expression: "(boosted ? weight_FatJetSF_Hbb{scale}_rel : 1.0f) * final_weight"
     name: CMS_bbww_ak8_Hbb_2022_{}
