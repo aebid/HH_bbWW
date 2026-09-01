@@ -592,11 +592,6 @@ def defineGenTopVariables(dfw):
     top, which has only one -- both branches stay at -1 and TopPtCorrProducer returns
     a weight of 1.
     """
-    # Tested as a bitwise mask rather than via GenStatusFlags::isLastCopy: a
-    # ROOT::VecOps::Map over a generic lambda deduces to void in the JIT context, and
-    # a lambda with an explicit parameter type would pin the NanoAOD storage type of
-    # GenPart_statusFlags, which varies between versions. The enum constant keeps the
-    # bit index from being a magic number.
     dfw.Define(
         "genPart_isLastCopy",
         "(GenPart_statusFlags & (1 << GenStatusFlags::kIsLastCopy)) != 0",

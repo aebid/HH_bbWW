@@ -116,13 +116,6 @@ corrections:
     njets_branch: Njets # Use nCentralJets, not raw nJet
     ntags_branch: nBTaggedJets
     pt_ll_gen: ll_pt_gen
-  # Top pT reweighting. Scoped to ttbar: the TWiki is explicit that only SM ttbar is
-  # reweighted, never single top or tops from BSM production. genTop_pt/genAntiTop_pt
-  # come from AnaProd/anaTupleDef.py:defineGenTopVariables and are -1 where no
-  # last-copy top pair exists, which makes the weight 1 there.
-  # parameterization: nnlo_nlo (NNLO QCD + NLO EW over NLO) or data_nlo (data over NLO).
-  # max_pt is the clamp on the pT the SF is evaluated at; left unset until the
-  # validity range is confirmed against the TWiki.
   top_pt:
     stages: [ AnalysisCache, HistTuple ]
     processes: [ TT, TT_Inclusive ]
