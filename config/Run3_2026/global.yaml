@@ -48,6 +48,24 @@ corrections:
     enabled:
       AnaTuple: true
       AnaTupleMerge: false
+  # PDF acceptance -- keep in sync with config/global.yaml. This era declares its own
+  # complete `corrections:` block, and config is concatenated text parsed once, so a
+  # duplicate key replaces the top-level block wholesale instead of merging into it.
+  # Without this copy, weight_base_pdf*_rel is never defined and the PDF_* entries in
+  # this era's weights.yaml reference a column that does not exist.
+  #
+  # PROVISIONAL: mode/first/n assume a Monte-Carlo replica set (member 0 nominal,
+  # members 1-100 the replicas). Confirm per campaign from the LHEPdfWeight branch
+  # title -- see pdf.h.
+  pdf:
+    stages: [ AnaTuple, AnaTupleMerge ]
+    branch: LHEPdfWeight
+    mode: replicas
+    first: 1
+    n: 100
+    enabled:
+      AnaTuple: true
+      AnaTupleMerge: false
   base: { stage: AnaTupleMerge }
   JEC: { stage: AnaTuple }
   JER:
