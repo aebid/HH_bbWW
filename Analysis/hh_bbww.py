@@ -768,6 +768,33 @@ def defineJetSelections(df, isData, period="Run3_2023BPix"):
         "fatbjet_isValid ? FatBJet_mass[0] * FatBJet_particleNet_massCorr[0] : std::decay_t<decltype(FatBJet_mass)>::value_type()",
     )
 
+    # Probes for the boosted msoftdrop cut efficiency (see Studies/msoftdrop_closure).
+    # FatBJet_Sel already requires msoftdrop > 30, so fatbjet_msoftdrop can never
+    # populate below the cut and cannot measure its efficiency. These keep the same
+    # jet ordering but drop the mass requirement. The -1 sentinel puts "no candidate"
+    # in the underflow instead of colliding with the physical range at 0.
+    if "SelectedFatJet_msoftdrop" in existing_cols:
+        # Hbb-tagged fat jet, no msoftdrop requirement: denominator of the cut
+        df = df.Define(
+            "FatBJetProbe_Sel",
+            "SelectedFatJet_particleNetWithMass_HbbvsQCD > 0.92",
+        )
+        df = df.Define(
+            "FatBJetProbe_msoftdrop",
+            "SelectedFatJet_msoftdrop[FatBJetProbe_Sel]",
+        )
+        df = df.Define(
+            "fatbjetProbe_msoftdrop",
+            "FatBJetProbe_msoftdrop.size() > 0 ? FatBJetProbe_msoftdrop[0] : -1.f",
+        )
+        # Leading-Hbb-score fat jet, neither tagger nor msoftdrop applied. The
+        # tagger is mass-aware, so this gives the cut efficiency without the
+        # correlation the tagged denominator carries.
+        df = df.Define(
+            "leadfatjet_msoftdrop",
+            "SelectedFatJet_msoftdrop.size() > 0 ? SelectedFatJet_msoftdrop[0] : -1.f",
+        )
+
     df = df.Define("Nfatjets", "SelectedFatJet_pt.size()")
     df = df.Define(
         "hadWcand_FatJet",

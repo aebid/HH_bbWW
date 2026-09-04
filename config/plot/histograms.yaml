@@ -403,6 +403,24 @@ fatbjet_msoftdrop:
   max_y_sf: 1.5
   divide_by_bin_width: False
 
+# msoftdrop cut-efficiency probes. 5 GeV bins so that a bin edge falls exactly
+# on the 30 GeV cut; "no candidate" is the -1 sentinel and lands in underflow.
+fatbjetProbe_msoftdrop:
+  x_bins: "40|0:200"
+  x_title: Hbb-tagged fatjet mass, no msoftdrop cut [GeV]
+  y_title: Events
+  use_log_y: False
+  max_y_sf: 1.5
+  divide_by_bin_width: False
+
+leadfatjet_msoftdrop:
+  x_bins: "40|0:200"
+  x_title: leading fatjet mass, no cuts [GeV]
+  y_title: Events
+  use_log_y: False
+  max_y_sf: 1.5
+  divide_by_bin_width: False
+
 
 ########## fatwjet BEGIN ##########
 

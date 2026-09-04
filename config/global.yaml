@@ -691,6 +691,8 @@ histTuple_flavors:
 
       - fatbjet_mass_PNetCorr
       - fatbjet_msoftdrop
+      - fatbjetProbe_msoftdrop
+      - leadfatjet_msoftdrop
       - fatbjet_nConstituents
       - fatbjet_tau1
       - fatbjet_tau2
