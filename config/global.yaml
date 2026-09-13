@@ -131,7 +131,6 @@ corrections:
   top_pt:
     stages: [ AnalysisCache, HistTuple ]
     processes: [ TT, TT_Inclusive ]
-    top_pt_branches: [ genTop_pt ]
     parameterization: nnlo_nlo
 extraFormat_for_triggerMatchingAndSF:
   pt: "nano"
