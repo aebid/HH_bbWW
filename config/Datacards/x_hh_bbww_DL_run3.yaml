@@ -591,24 +591,9 @@ uncertainties:
     type: shape
 
 
-  # PDF acceptance, shape-only, split by initial state. The four entries pick up four
-  # identically-produced histogram families -- the PDF_* entries in weights.yaml all read
-  # the same weight_base_pdf{scale}_rel column -- and the split is applied here, because
-  # weights.yaml has no process filter.
-  #
-  # Complementary to the PDF_alphas lnN below rather than a double count of it: the shape
-  # is normalised by its own inclusive sum of weights in the producer, so the rate is
-  # divided out and only acceptance reaches the card. PDF_alphas keeps the rate.
-  #
-  # Names follow https://gitlab.cern.ch/hh/naming-conventions, the same source cited for
-  # BR_hbb/BR_hww. CONFIRM the exact strings against that page: the signal here is a
-  # resonant gluon-fusion X->HH, which may warrant a dedicated name rather than reusing
-  # the non-resonant pdf_Higgs_ggHH.
-  #
-  # Caveat, the same interaction QCD_scale_* documents above: TotalBkg matches all three
-  # background entries through its subprocesses, so the boosted merged template would
-  # take the identical shape three times over. Verify against Uncertainty.appliesTo and
-  # restrict if that is what it does.
+  # PDF acceptance, shape-only, split by initial state. CONFIRM the names against
+  # https://gitlab.cern.ch/hh/naming-conventions. TotalBkg may match all three
+  # background entries; verify against Uncertainty.appliesTo.
   - name: pdf_Higgs_ggHH
     type: shape
     processes:

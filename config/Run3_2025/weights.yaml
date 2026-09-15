@@ -37,18 +37,8 @@ norm:
     expression: weight_base_fsr{scale}_rel * final_weight
     name: ps_fsr_{}
 
-  # PDF acceptance, shape-only: weight_base_pdf{scale}_rel is already normalised by its
-  # own inclusive sum of weights, so only the acceptance difference survives. The rate
-  # is carried by the PDF_alphas lnN in the datacards, so the two do not double count.
-  #
-  # All four entries read the *same* column and differ only in `name:`. The split by
-  # initial state is applied in the datacards via `processes:`, because weights.yaml has
-  # no process filter -- HistTupleProducer takes every key in `norm:` for every dataset.
-  # Emitting a column for only some processes would crash the rest at the unguarded
-  # Define in histTupleDef.
-  #
-  # No era token, unlike the detector nuisances above: one correlated nuisance per
-  # initial state, shared across every era.
+  # PDF acceptance, shape-only. All four entries read the same column; the split by
+  # initial state is applied in the datacards.
   PDF_Higgs_ggHH:
     expression: weight_base_pdf{scale}_rel * final_weight
     name: pdf_Higgs_ggHH_{}

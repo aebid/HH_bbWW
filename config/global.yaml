@@ -122,28 +122,9 @@ corrections:
     enabled:
       AnaTuple: true
       AnaTupleMerge: false
-  # PDF acceptance. Stages and enabled flags mirror pu: the weights are defined at
-  # AnaTuple, where LHEPdfWeight still carries its NanoAOD name and the inclusive sums
-  # of weight_gen * weight_pu_Central * weight_pdf_<var> are accumulated into the
-  # anaCache denominators, and AnaTupleMerge reads the persisted branches back to build
-  # weight_base_pdf{Up,Down}_rel. Dividing each variation by its own denominator is what
-  # makes the nuisance shape-only, and therefore complementary to the PDF_alphas lnN in
-  # the datacards rather than a double count of it.
-  #
-  # AnaTupleMerge must stay disabled: the merged tuple holds LHEPdf_Weight, not
-  # LHEPdfWeight, so an enabled producer there would hit its missing-input path. It
-  # raises rather than shadowing the persisted values, but the config is what should
-  # prevent it.
-  #
-  # mode/first/n are NOT guessed from the length of the vector -- see pdf.h. Applying
-  # the replica formula to a Hessian set understates the spread by about a factor of
-  # ten, and a length of 103 is ambiguous between the two families.
-  #
-  # PROVISIONAL: these values assume a Monte-Carlo replica set with member 0 nominal and
-  # members 1-100 the replicas (e.g. NNPDF31_nnlo_as_0118, LHA 306000-306100), which
-  # leaves any trailing alphaS members out of the spread. They must be confirmed per
-  # campaign by reading the LHEPdfWeight branch title from a source NanoAOD; the title
-  # names the LHA ID range and is dropped by the Define-rename in anaTupleDef.py.
+  # PDF acceptance, shape-only; disabled at AnaTupleMerge, which reads the persisted
+  # weights. PROVISIONAL: mode/first/n assume a replica set (member 0 nominal, 1-100
+  # replicas); confirm per campaign from the LHEPdfWeight branch title.
   pdf:
     stages: [ AnaTuple, AnaTupleMerge ]
     branch: LHEPdfWeight
