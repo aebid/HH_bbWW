@@ -30,10 +30,10 @@ def selectHWW(df, selected_channels):
         "Electron_sel",
         """
         (v_ops::pt(Electron_p4) > 10) &&
-        ( (Electron_superclusterEta < 1.4442) || (Electron_superclusterEta > 1.5560) ) &&
+        ( (abs(Electron_superclusterEta) < 1.4442) || (abs(Electron_superclusterEta) > 1.5560) ) &&
         (
-            ( (Electron_superclusterEta <= 1.479) && (abs(Electron_dxy) < 0.05) && (abs(Electron_dz) < 0.1) ) ||
-            ( (Electron_superclusterEta > 1.479) && (abs(Electron_dxy) < 0.1) && (abs(Electron_dz) < 0.2) )
+            ( (abs(Electron_superclusterEta) <= 1.479) && (abs(Electron_dxy) < 0.05) && (abs(Electron_dz) < 0.1) ) ||
+            ( (abs(Electron_superclusterEta) > 1.479) && (abs(Electron_dxy) < 0.1) && (abs(Electron_dz) < 0.2) )
         ) &&
         (Electron_sip3d <= 8) && (Electron_mvaIso >= -0.9)
         """,
