@@ -31,6 +31,12 @@ ElectronObservables = [
     "mvaIso",
     "mvaNoIso",
     "miniPFRelIso_all",
+    # Dropped from the Electron_sel baseline, kept here so the gap veto and the
+    # impact-parameter cuts can be re-applied downstream.
+    "dxy",
+    "dz",
+    "sip3d",
+    "superclusterEta",
 ]
 
 TauObservables = [
