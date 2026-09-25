@@ -1,0 +1,12 @@
+# Overlay for the single-lepton limit chain, on top of user_custom.yaml.
+#
+# The SL shapes are produced outside this area (the two-stage DNN histograms), so the
+# merged histograms are read from there; everything the chain writes still goes to
+# fs_default. A bare /eos path is a LocalFileSystem (Setup.py), read in place.
+#
+#   law run PlotResonantLimitsTask --version <out> \
+#     --hists-version v2605a_TwoStageDNN_Shapes_v3 --period Run3_2022 --workflow local \
+#     --user-custom config/user_custom_SL.yaml \
+#     --customisations "StatInference.config=config/Datacards/x_hh_bbww_SL_run3.yaml"
+
+fs_HistTuple: /eos/user/a/abolshov/HH_bbWW
