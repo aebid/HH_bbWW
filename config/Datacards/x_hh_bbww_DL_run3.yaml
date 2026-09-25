@@ -73,6 +73,17 @@ processes:
     is_data: true
     is_asimov_data: true
 
+  # The one-lepton bbWW sample also reaches the two-lepton selection (a fake or
+  # non-prompt second lepton); fitted with the others under the same strength, so r means
+  # sigma*B(X->HH) in both channels and a SL+DL combination fits one signal.
+  - process: XtoHHto2B2W_1L_${MX}
+    hist_name: XtoHHto2B2W_1L_${MX}
+    param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
+    is_signal: true
+    allow_zero_integral: true
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+
   - process: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
     hist_name: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
     param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
@@ -678,12 +689,14 @@ uncertainties:
   - name: BR_hbb
     type: lnN
     processes:
+      - ^XtoHHto2B2W_1L_
       - ^XtoHHto2B2W_2L_
       - ^XtoHHto2Tau2B_
     value: [ -0.0126, 0.0124 ]
   - name: BR_hww
     type: lnN
     processes:
+      - ^XtoHHto2B2W_1L_
       - ^XtoHHto2B2W_2L_
     value: [ -0.0152, 0.0153 ]
   - name: BR_htt

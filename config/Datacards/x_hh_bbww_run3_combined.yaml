@@ -1,0 +1,65 @@
+# The SL+DL combination. It builds no datacards of its own: each member is a complete
+# datacard configuration, run through its own chain under <version>/<member>/, and the
+# combination combines their cards per mass (CombinedResonantLimitsTask) into
+# <version>/combined/. Nuisances of the same name are correlated across the members by
+# that combination; the channels (e, mu | eE, eMu, muMu) are disjoint, so no bin and no
+# event is shared.
+#
+#   law run PlotResonantLimitsTask --version <out> --period Run3_2022 --workflow local \
+#     --datacard-config config/Datacards/x_hh_bbww_run3_combined.yaml
+#
+# draws every member's own limit_plots (<version>/<member>/LimitPlots) and the plots
+# below (<version>/combined/LimitPlots).
+#
+# Each member names the histograms it is built from: the two channels come from different
+# productions, and SL's are read from another area (user_custom_SL.yaml sets its
+# fs_HistTuple).
+members:
+  SL:
+    config: config/Datacards/x_hh_bbww_SL_run3.yaml
+    hists_version: v2605a_TwoStageDNN_Shapes_v3
+    user_custom: config/user_custom_SL.yaml
+  DL:
+    config: config/Datacards/x_hh_bbww_DL_run3_DNNOutputsv3.yaml
+    hists_version: v2605a_DNNOutputs_v3
+
+# Must be the members' own top-level eras: the combination combines like with like.
+eras:
+  - Run3_Early
+campaigns:
+  Run3_Early: run3_early
+
+# Globs name the member they read, "<member>:<glob>", relative to that member's datacards
+# directory for the era: "*.txt" is its full per-mass card, "${ERA}/<channel>/*.txt" and
+# "${ERA}/categories/SR_<cat>/*.txt" its per-channel and per-category ones. A list of
+# globs is one curve: the cards are combined per mass.
+limit_plots:
+  - name: channels
+    datacards:
+      - { name: "SL+DL", glob: [ "SL:*.txt", "DL:*.txt" ] }
+      - { name: "e", glob: "SL:${ERA}/e/*.txt" }
+      - { name: "#mu", glob: "SL:${ERA}/mu/*.txt" }
+      - { name: "ee", glob: "DL:${ERA}/eE/*.txt" }
+      - { name: "e#mu", glob: "DL:${ERA}/eMu/*.txt" }
+      - { name: "#mu#mu", glob: "DL:${ERA}/muMu/*.txt" }
+    plot_params: &limit_plot_style
+      xsec: pb
+      y_log: true
+      x_min: 200
+      x_max: 1000
+      y_min: 0.001
+      y_max: 100
+  - name: categories
+    datacards:
+      - { name: "SL+DL", glob: [ "SL:*.txt", "DL:*.txt" ] }
+      - { name: "res 2b", glob: [ "SL:${ERA}/categories/SR_res2b/*.txt", "DL:${ERA}/categories/SR_res2b/*.txt" ] }
+      - { name: "recovery", glob: [ "SL:${ERA}/categories/SR_recovery/*.txt", "DL:${ERA}/categories/SR_recovery/*.txt" ] }
+      - { name: "boosted", glob: [ "SL:${ERA}/categories/SR_boosted/*.txt", "DL:${ERA}/categories/SR_boosted/*.txt" ] }
+    plot_params: *limit_plot_style
+  - name: sl_vs_dl
+    bands: true
+    datacards:
+      - { name: "SL", glob: "SL:*.txt" }
+      - { name: "DL", glob: "DL:*.txt" }
+      - { name: "SL+DL", glob: [ "SL:*.txt", "DL:*.txt" ] }
+    plot_params: *limit_plot_style
