@@ -34,26 +34,14 @@ channels:
   - muMu
   - eMu
   - eE
-# The datacard bins, exactly as they exist in the input shapes. These are what
-# StatInference/bin_opt_2d/rebin_2d.py wrote when it cut each base category into DNN
-# slices -- the chain does no slicing of its own, it reads the directories it is given.
+# The base categories. The HME-box slice each is cut into is not listed: the maker
+# expands these against the binning.json the preprocess step writes beside the shapes.
 categories:
-  - SR/res2b_dnn0
-  - SR/res2b_dnn1
-  - SR/res2b_dnn2
-  - SR/res2b_dnn3
-  - SR/boosted_dnn0
-  - SR/boosted_dnn1
-  - SR/boosted_dnn2
-  - SR/boosted_dnn3
-  - SR/recovery_dnn0
-  - SR/recovery_dnn1
-  - SR/recovery_dnn2
-  - SR/recovery_dnn3
+  - SR/res2b
+  - SR/boosted
+  - SR/recovery
 
-# How to take those names apart again, to group the slices of one base category for the
-# per-category limits. Must match the category_pattern rebin_2d.py wrote them with.
-category_pattern: "{base_category}_dnn{slice_idx}"
+category_pattern: "{base_category}_hmebox{slice_idx}"
 
 # Applied to the merged histograms before the datacards are built, by
 # PreprocessShapesTask. The chain knows nothing about what this does -- it supplies
@@ -66,12 +54,23 @@ preprocess:
   script: StatInference/bin_opt_2d/rebin_2d.py
   args:
     - --binning-config
-    - config/Datacards/binning_2d.yaml
+    - config/Datacards/binning_hmebox.yaml
 
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
+
+  # The one-lepton bbWW sample also reaches the two-lepton selection (a fake or
+  # non-prompt second lepton); fitted with the others under the same strength, so r means
+  # sigma*B(X->HH) in both channels and a SL+DL combination fits one signal.
+  - process: XtoHHto2B2W_1L_${MX}
+    hist_name: XtoHHto2B2W_1L_${MX}
+    param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
+    is_signal: true
+    allow_zero_integral: true
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
 
   - process: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
     hist_name: XtoHHto2B2W_2L_${MX} # GluGluToRadion2L_${MX}
@@ -678,12 +677,14 @@ uncertainties:
   - name: BR_hbb
     type: lnN
     processes:
+      - ^XtoHHto2B2W_1L_
       - ^XtoHHto2B2W_2L_
       - ^XtoHHto2Tau2B_
     value: [ -0.0126, 0.0124 ]
   - name: BR_hww
     type: lnN
     processes:
+      - ^XtoHHto2B2W_1L_
       - ^XtoHHto2B2W_2L_
     value: [ -0.0152, 0.0153 ]
   - name: BR_htt
