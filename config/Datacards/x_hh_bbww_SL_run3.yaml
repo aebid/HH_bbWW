@@ -22,9 +22,10 @@ era_groups:
 channels:
   - e
   - mu
-# The datacard categories, named as DL's are. No rebinning step yet: the shapes are read
-# as produced (the binary DNN score, 100 bins), so this card exercises input_categories on
-# its own. The HME-box binning and the SL+DL combination follow in later PRs.
+# The base categories. The slices each is cut into are not listed: the maker expands
+# these against the binning.json the preprocess step writes beside the shapes. Named as
+# DL's are, so the two channels' per-category cards share categories/SR_<cat>/ and a
+# combination combines them by name; the bins stay distinct, the channel is in the name.
 categories:
   - SR/res2b
   - SR/boosted
@@ -39,6 +40,17 @@ input_categories:
   SR/res2b: SR_SL_M${MX}/res2b
   SR/boosted: SR_SL_M${MX}/boosted
   SR/recovery: SR_SL_M${MX}/recovery
+category_pattern: "{base_category}_hmebox{slice_idx}"
+
+# The HME-box binning of the DL channel, on a 1D input. rebin_2d.py reads a 1D shape as a
+# 2D one with a single HME bin, so the box is necessarily the full range and what remains
+# is its DNN binning -- the same partition, floors and marginal-gain trim as DL. When the
+# 2D binary_DNN_m${MX}_vs_HME shapes exist this block needs no change to cut a real box.
+preprocess:
+  script: StatInference/bin_opt_2d/rebin_2d.py
+  args:
+    - --binning-config
+    - config/Datacards/binning_hmebox.yaml
 
 processes:
   - process: data_obs
