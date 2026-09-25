@@ -1,0 +1,20 @@
+# HME box cut around the signal, with the DNN binned inside it.
+# One category per base category: a single contiguous HME window, a 1D DNN shape.
+# n_slices is 1 by construction -- the box is the whole selection.
+bkg_per_bin: 1.0
+category_pattern: '{base_category}_hmebox{slice_idx}'
+dp_min_bin_gain: 0.002
+max_bins_per_slice: 10
+min_bin_bkg_each: 0.01
+min_bin_bkg_each_neff: 2.0
+min_bin_bkg_neff: 4.0
+min_bkg_frac: 0.05
+min_signal: 0.5
+min_slice_bkg_each: 0.01
+min_slice_bkg_each_neff: 0.0
+min_slice_bkg_neff: 4.0
+min_slice_bkg_sum: 1.0
+n_slices: 1
+significance_mode: asimov
+slice_var: HME
+strategy: hme_box

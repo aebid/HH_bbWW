@@ -3,118 +3,518 @@ type: resonant
 model:
   parameters: [ MX ]
   param_dependent_bkg: true
-  input_file_pattern: SL_DNN_m${MX}_vs_HME/SL_DNN_m${MX}_vs_HME.root
+  # The two-stage SL DNN: a multiclass per mass hypothesis assigns each event to the
+  # signal region or to a background-class region, and the binary signal-vs-background
+  # score of the same hypothesis is the fitted discriminant. 1D -- there is no HME axis
+  # in these shapes.
+  input_file_pattern: ${ERA}/TwoStageDNN_M${MX}_binary/TwoStageDNN_M${MX}_binary.root
 signalFractionForRelevantBins: 0.2
+# One limit on all four datasets combined, as for DL. The sub-eras stay in era_groups
+# because Run3_Early is their combination; they are not built standalone.
 eras:
-  # - Run3_2022
-  # - Run3_2022EE
-  # - Run3_2023
-  - Run3_2023BPix
+  - Run3_Early
+era_groups:
+  Run3_Early:
+    - Run3_2022
+    - Run3_2022EE
+    - Run3_2023
+    - Run3_2023BPix
 channels:
-  - mu
   - e
+  - mu
+# The base categories. The slices each is cut into are not listed: the maker expands
+# these against the binning.json the preprocess step writes beside the shapes.
 categories:
-  - ZVeto_OS_Iso/res2b
-  - ZVeto_OS_Iso/boosted
-  - ZVeto_OS_Iso/recovery
+  - SR_SL/res2b
+  - SR_SL/boosted
+  - SR_SL/recovery
+# Where each category is read from. The file for mass MX holds a signal region for every
+# mass hypothesis (SR_SL_M300 ... SR_SL_M1000), since every event is classified by every
+# mass's multiclass; the one that belongs to the MX limit is SR_SL_M${MX}. The category
+# keeps one name for every mass -- the bin, the per-category cards, the scoping below --
+# and only the read is redirected. Listing the SR_SL_M* directories as categories instead
+# would put all ten into every card as separate bins: every file has all of them.
+input_categories:
+  SR_SL/res2b: SR_SL_M${MX}/res2b
+  SR_SL/boosted: SR_SL_M${MX}/boosted
+  SR_SL/recovery: SR_SL_M${MX}/recovery
+category_pattern: "{base_category}_hmebox{slice_idx}"
+
+# The HME-box binning of the DL channel, on a 1D input. rebin_2d.py reads a 1D shape as a
+# 2D one with a single HME bin, so the box is necessarily the full range and what remains
+# is its DNN binning -- the same partition, floors and marginal-gain trim as DL. When the
+# 2D binary_DNN_m${MX}_vs_HME shapes exist this block needs no change to cut a real box.
+preprocess:
+  script: StatInference/bin_opt_2d/rebin_2d.py
+  args:
+    - --binning-config
+    - config/Datacards/binning_hmebox.yaml
+
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
-  - process: XtoHHto2B2W_1L_${MX} # GluGluToRadion2L_${MX}
-    hist_name: XtoHHto2B2W_1L_${MX} # GluGluToRadion2L_${MX}
-    # param_values: [ 250, 260, 270, 280, 300, 350, 450, 550, 600, 650, 700, 800 ]
+
+  # All three signal samples, one signal strength, unscaled: the limit is on
+  # sigma(pp->X) * B(X->HH), in pb, as in DL. The samples are split by the generated
+  # decay, not by channel -- a two-lepton event that loses a lepton is selected here.
+  - process: XtoHHto2B2W_1L_${MX}
+    hist_name: XtoHHto2B2W_1L_${MX}
     param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
     is_signal: true
-    # 125.0 H->bb BR 5.824e-01 https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR
-    # 125.0 H->WW BR 2.137e-01
-    # 125.0 H->ZZ BR 2.619e-02
-    # W->lv 10.86e-02 https://pdg.lbl.gov/2019/listings/rpp2019-list-w-boson.pdf
-    # W->hadrons BR 67.41e-02 (1 - 3 * 10.86e-02)
-    # Z->ll 3.3658e-02
-    # Z->invisible 20e-02
-    # scale: 2 * 5.824e-01 * ( 2.137e-01 * 3 * 10.86e-02 * 3 * 10.86e-02 + 2 * 2.619E-02 * 3 * 3.3658e-02 * 20e-02)
-    # XtoHHto2B2W forces W decay, not allowing Zs
-    # Single Lepton case replaces second W->lv with a W->hadrons
-    scale: 2 * 5.824e-01 * ( 2.137e-01 * 2 * (3 * 10.86e-02 * 67.41e-02))
-  - TT
-  # - DY
-  # - VV
-  - ST
-  - W
-  # - Other
+    allow_zero_integral: true
+  - process: XtoHHto2B2W_2L_${MX}
+    hist_name: XtoHHto2B2W_2L_${MX}
+    param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
+    is_signal: true
+    allow_zero_integral: true
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+  - process: XtoHHto2Tau2B_${MX}
+    hist_name: XtoHHto2Tau2B_${MX}
+    param_values: [ 300, 400, 500, 550, 600, 650, 700, 800, 900, 1000 ]
+    is_signal: true
+    allow_zero_integral: true
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+  - process: TT
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+  - process: W
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+  - process: ST
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+  - process: DY
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+  - process: VV
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+  - process: SingleHiggs
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+
 uncertainties:
-  - name: lumi_13p6TeV
+  # Luminosity, as the Run 3 recommendation splits it: one component correlated across
+  # all four eras but with a different size in each year group, and a second carried by
+  # 2023 alone. Not a per-year uncorrelated pair -- that would treat the two year groups
+  # as independent, which they are not.
+  #
+  # lumi_1 is one nuisance whose value depends on the era. Under a meta-era the datacard
+  # maker cannot express that as a single lnN on the summed yield, so it builds the
+  # variation sub-era by sub-era and writes it as a shape; each sub-era contributes its
+  # own factor, and the ratio to nominal comes out as the yield-weighted blend.
+  #
+  # Reference: https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3?extralog=-%20caching%20topic#Correlations_between_years_and_c
+  - name: lumi_1_13p6TeV
+    hasMultipleValues: True
     type: lnN
-    value: 0.014 # https://twiki.cern.ch/twiki/bin/view/CMS/LumiRecommendationsRun3
+    value:
+      - value: 0.0138
+        type: lnN
+        eras:
+          - Run3_2022
+          - Run3_2022EE
+      - value: 0.0017
+        type: lnN
+        eras:
+          - Run3_2023
+          - Run3_2023BPix
+  - name: lumi_2_13p6TeV
+    type: lnN
+    eras:
+      - Run3_2023
+      - Run3_2023BPix
+    value: 0.0127
 
-
-  # - name: MuonID_TightID
-  # These sources are decorrelated across eras, so config/Run3_<era>/weights.yaml
-  # writes them with the era suffix and the datacard has to name the era it wants.
-  # This configuration covers Run3_2023BPix only; adding another era here means
-  # adding that era's entries too. CMS_scale_j is deliberately unsuffixed -- JES
-  # `Total` stays correlated, see x_hh_bbww_DL_run3.yaml for why.
+  # Muon ID
+  - name: CMS_eff_m_id_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_eff_m_id_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_eff_m_id_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: CMS_eff_m_id_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
-  # - name: MuonID_TightIDIso
+
+  # Muon Iso
+  - name: CMS_eff_m_id_iso_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_eff_m_id_iso_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_eff_m_id_iso_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: CMS_eff_m_id_iso_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
+
+  # Ele ID and Iso
+  - name: EleID_TightIDIso_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: EleID_TightIDIso_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: EleID_TightIDIso_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: EleID_TightIDIso_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
 
+  # Ele Trigger
+  - name: SingleEleTrg_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: SingleEleTrg_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: SingleEleTrg_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: SingleEleTrg_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
+
+  # Muon Trigger
+  - name: SingleMuonTrg_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: SingleMuonTrg_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: SingleMuonTrg_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: SingleMuonTrg_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
 
-
+  # Pileup
+  - name: CMS_pileup_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_pileup_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_pileup_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: CMS_pileup_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
 
-
-  - name: CMS_scale_j
+  # AK4 BTagging
+  - name: CMS_btag_LF
     type: shape
+
+  - name: CMS_btag_HF
+    type: shape
+
+  - name: CMS_btag_lfstats1_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_lfstats1_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_lfstats1_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_lfstats1_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_btag_lfstats2_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_lfstats2_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_lfstats2_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_lfstats2_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_btag_hfstats1_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_hfstats1_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_hfstats1_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_hfstats1_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_btag_hfstats2_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_btag_hfstats2_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_btag_hfstats2_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_btag_hfstats2_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_btag_cferr1
+    type: shape
+
+  - name: CMS_btag_cferr2
+    type: shape
+
+  # DY reweighting (hh2bbtautau derivation). Scoped to DY: the correction is
+  # configured with a processes: list, so it is a no-op everywhere else.
+  # The per-era fit's statistical uncertainty is decorrelated by era; the two
+  # fit-model variations are correlated.
+  - name: CMS_bbww_dy_stat_btag0_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag0_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag0_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag0_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_stat_btag1_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag1_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag1_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag1_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_stat_btag2_2022
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_dy_stat_btag2_2022EE
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_dy_stat_btag2_2023
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_dy_stat_btag2_2023BPix
+    type: shape
+    processes:
+      - DY
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_dy_syst_gauss
+    type: shape
+    processes:
+      - DY
+  - name: CMS_bbww_dy_syst_linear
+    type: shape
+    processes:
+      - DY
+
+  # AK8 BTagging
+  - name: CMS_bbww_ak8_Hbb_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_Hbb_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_Hbb_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_Hbb_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_ak8_Hcc_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_Hcc_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_Hcc_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_Hcc_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+  - name: CMS_bbww_ak8_tau21_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_bbww_ak8_tau21_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_bbww_ak8_tau21_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_bbww_ak8_tau21_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_scale_j_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_scale_j_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_scale_j_2023
+    type: shape
+    eras:
+      - Run3_2023
+  - name: CMS_scale_j_2023BPix
+    type: shape
+    eras:
+      - Run3_2023BPix
+
+  - name: CMS_res_j_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_res_j_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_res_j_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: CMS_res_j_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
+  - name: CMS_scale_e_2022
+    type: shape
+    eras:
+      - Run3_2022
+  - name: CMS_scale_e_2022EE
+    type: shape
+    eras:
+      - Run3_2022EE
+  - name: CMS_scale_e_2023
+    type: shape
+    eras:
+      - Run3_2023
   - name: CMS_scale_e_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
 
-  # Parton shower ISR/FSR. No `eras:` and no `processes:` -- one correlated nuisance
-  # each, applied to every process including signal, because it is one Pythia shower
-  # setting varied in every sample. Shape-only: the inclusive yield is normalised away
-  # in the producer, so what reaches the card is acceptance alone.
-  #
-  # Expect ps_fsr to be resolved to lnN or dropped in some categories by autolnNThr /
-  # ignorelnNThr. For a shape-only nuisance that is correct: a category whose acceptance
-  # barely moves should drop out.
-  - name: ps_isr
-    type: shape
-  - name: ps_fsr
-    type: shape
+  # No ps_isr / ps_fsr: the SL shapes were produced without the parton-shower variations.
+  # Add them back here once they are.
 
 
   # For multiple values, Konstantin says do [ down, up ]
   - name: QCD_scale_TT
     type: lnN
     processes:
-      - TTno4Q
+      - TT
     value: [ -0.036, 0.025 ] # TT XS uncertainty in percentage from xsec yaml
     # TT:
     # crossSec: '923.6'
@@ -142,7 +542,17 @@ uncertainties:
     type: lnN
     processes:
       - VV
-    value: 0.005 # This was uncertainty from XSDB
+    # WARNING: this is not a QCD scale uncertainty. XSDB's `unc` field is an absolute
+    # uncertainty in pb on its own Monte-Carlo integration, and 0.005 is just that
+    # number divided by the cross section (WW 0.3733/80.23 = 0.47%, WZ 0.1318/29.1 =
+    # 0.45%, ZZ 0.0649/12.75 = 0.51%; FLAF/config/crossSections13p6TeV.yaml:1051-1209).
+    # The real NNLO diboson scale uncertainty is several percent. Needs replacing with a
+    # number from the diboson theory reference; left as-is rather than guessed.
+    value: 0.005
+
+  # OPEN: W and SingleHiggs carry no cross-section lnN yet. They are backgrounds of
+  # consequence here (W is not in the DL fit at all), and their values are not in the
+  # DL card to take over -- they want a source, not a guess.
 
   - name: PDF_alphas
     hasMultipleValues: True
@@ -174,6 +584,39 @@ uncertainties:
         processes:
           - ST
 
+  # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
+  # which is what makes them apply everywhere. Values from
+  # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
+  #
+  # XtoHHto2B2W_1L is the single-lepton signal and is not a process of this dilepton
+  # card; it belongs in these lists when the SL card gains them. Single Higgs and VH
+  # likewise, once they are added as processes.
+  #
+  # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
+  # with re.match, anything else compared literally). They have to be: by the time an
+  # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
+  # so the process is XtoHHto2B2W_2L_700 and a literal "XtoHHto2B2W_2L_${MX}" matches
+  # nothing at all -- silently, since an uncertainty that applies to no process is simply
+  # never added.
+  - name: BR_hbb
+    type: lnN
+    processes:
+      - ^XtoHHto2B2W_1L_
+      - ^XtoHHto2B2W_2L_
+      - ^XtoHHto2Tau2B_
+    value: [ -0.0126, 0.0124 ]
+  - name: BR_hww
+    type: lnN
+    processes:
+      - ^XtoHHto2B2W_1L_
+      - ^XtoHHto2B2W_2L_
+    value: [ -0.0152, 0.0153 ]
+  - name: BR_htt
+    type: lnN
+    processes:
+      - ^XtoHHto2Tau2B_
+    value: [ -0.0163, 0.0165 ]
+
 autolnNThr: 0.1
 asymlnNThr: 0.001
 ignorelnNThr: 0.001
@@ -182,3 +625,41 @@ autoMCStats:
   threshold: 20
   apply_to_signal: true
   mode: 1
+
+campaigns:
+  Run3_Early: run3_early
+  Run3_2022: "2022preEE"
+  Run3_2022EE: "2022postEE"
+  Run3_2023: "2023preBPix"
+  Run3_2023BPix: "2023postBPix"
+
+limit_plots:
+  - name: channels
+    datacards:
+      - { name: "Combined", glob: "*.txt" }
+      - { name: "e", glob: "${ERA}/e/*.txt" }
+      - { name: "#mu", glob: "${ERA}/mu/*.txt" }
+    plot_params: &limit_plot_style
+      xsec: pb
+      y_log: true
+      x_min: 200
+      x_max: 1000
+      y_min: 0.001
+      y_max: 100
+  - name: categories
+    datacards:
+      - { name: "Combined", glob: "*.txt" }
+      - { name: "res 2b", glob: "${ERA}/categories/SR_SL_res2b/*.txt" }
+      - { name: "recovery", glob: "${ERA}/categories/SR_SL_recovery/*.txt" }
+      - { name: "boosted", glob: "${ERA}/categories/SR_SL_boosted/*.txt" }
+    plot_params: *limit_plot_style
+impact_plots:
+  - name: combined
+    masses: [ 300, 600, 800 ]
+    poi_value: limit
+    fit_args:
+      - --cminFallbackAlgo Minuit2,Simplex,0:0.1
+    plot_params:
+      method: default
+      order_by_impact: true
+      mc_stats: false
