@@ -38,7 +38,8 @@ python3 Studies/ShapeYields/shape_yields.py \
     --output /tmp/slide
 ```
 
-That gives one page per base category; add `--category SR/res2b_dnn1` to narrow to one.
+That gives one page per mass and lepton channel; add `--category SR/res2b_dnn1` to narrow
+the page to one category.
 Point `--from-csv` at `/eos/user/d/daebi/HH_bbWW/uncv2/ShapeYields/yields.csv` and you can
 skip the first command entirely.
 
@@ -75,16 +76,23 @@ the datacard configuration's own.
 to the single entry of the configuration's `eras:`, so it is only needed if that list ever
 holds more than one.
 
+`--bin-var` names the axis the bins run along. By default it is "HME (GeV)" for DNN slices
+and "DNN score" for an HME window (`slice_var: HME` in the binning configuration).
+
+`run_yields.sh` runs the script with the FLAF environment sourced, for when a bare `python3`
+lacks uproot or matplotlib: `bash Studies/ShapeYields/run_yields.sh <same arguments>`.
+
 ## What comes out
 
 `yields.csv` -- one row per (era, mass, channel, category, bin, process), carrying the
-bin's HME edges, its content and its error. Tidy, so it sorts and greps and reads into
-pandas without reshaping.
+bin's edges, its content and its error, and the `selection` the category stands for (e.g.
+"260.00 < HME < 560.00" for an HME window, read from the category directory's title). Tidy,
+so it sorts and greps and reads into pandas without reshaping.
 
-`yields_<era>.pdf` -- the same numbers as tables, one page per
-(era, mass, channel, base category) with the four DNN slices stacked down the page. Each
-page is a slide. Cell shade is log magnitude within the slice; negative content is boxed
-and printed in red.
+`yields_<era>.pdf` -- the same numbers as tables, one page per (era, mass, lepton channel)
+with every category of that channel down the page (res2b, boosted, recovery, and their
+slices), each headed with its selection. Each page is a slide. Cell shade is log magnitude
+within the slice; negative content is boxed and printed in red.
 
 ## The uncv2 run
 

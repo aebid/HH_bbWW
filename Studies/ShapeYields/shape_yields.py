@@ -230,6 +230,22 @@ def read_hist(rootfile, path):
     return h.values(), h.errors(), h.axis().edges()
 
 
+def read_selection(rootfile, channel, category):
+    """The cut a category stands for, from its directory's title, or "".
+
+    rebin_2d.py titles each slice directory with its selection -- "700.00 < HME < 810.00"
+    for an HME box, the DNN range for a DNN slice -- so the label comes with the shapes
+    and nothing here re-derives it. uproot exposes a directory's title only through its
+    parent's title_of().
+    """
+    parent, _, leaf = f"{channel}/{category}".rpartition("/")
+    try:
+        title = rootfile[parent].title_of(leaf)
+    except Exception:
+        return ""
+    return title if title and title != leaf else ""
+
+
 def gather(input_dir, cfg, knobs, eras, masses, channels, categories, param_name):
     """One pass over the files. Returns a list of row dicts, the tidy CSV in memory.
 
@@ -257,6 +273,7 @@ def gather(input_dir, cfg, knobs, eras, masses, channels, categories, param_name
                 for channel in channels:
                     for category in categories:
                         base, idx = naming.split(category)
+                        selection = read_selection(f, channel, category)
                         for label, hist_name, is_sig, chs, cats in procs:
                             if not process_applies(
                                 label, chs, cats, channel, category, base, scopes
@@ -275,6 +292,7 @@ def gather(input_dir, cfg, knobs, eras, masses, channels, categories, param_name
                                         "category": category,
                                         "base_category": base,
                                         "slice_idx": idx,
+                                        "selection": selection,
                                         "bin": b + 1,
                                         "bin_lo": float(edges[b]),
                                         "bin_hi": float(edges[b + 1]),
@@ -324,6 +342,7 @@ def write_csv(rows, path):
         "base_category",
         "slice_idx",
         "category",
+        "selection",
         "bin",
         "bin_lo",
         "bin_hi",
@@ -371,6 +390,8 @@ def read_csv(path, eras, masses, channels, categories):
             r["bin"] = int(r["bin"])
             r["is_signal"] = int(r["is_signal"])
             r["slice_idx"] = int(r["slice_idx"]) if r["slice_idx"] != "" else None
+            # absent from CSVs written before the column existed
+            r["selection"] = r.get("selection") or ""
             for k in ("bin_lo", "bin_hi", "yield", "error"):
                 r[k] = float(r[k])
             rows.append(r)
@@ -415,7 +436,7 @@ def shade(value, vmax):
 
 ROW_H = 0.27  # inches per table row
 LABEL_W = 2.05  # inches for the process-name column
-COL_W = 1.16  # inches per HME bin column
+COL_W = 1.16  # inches per fit-bin column
 TITLE_H = 0.52
 FOOTER_H = 0.34
 
@@ -453,7 +474,10 @@ def build_panel(per_proc, bkg_procs, signal_procs):
     return rows_by_proc, edges, order, n_bins
 
 
-def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
+MIN_COLS = 7
+
+
+def draw_page(fig, panels, n_cols, header, param_name, slice_var, bin_var, note):
     """Draw every slice of one page into a single axes.
 
     One coordinate system for the whole page rather than one axes per slice: the rows
@@ -488,10 +512,15 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
         n_bins = panel["n_bins"]
 
         y -= 1
+        caption = panel["category"]
+        if panel["slice_idx"] is not None:
+            caption += f"   ({slice_var} slice {panel['slice_idx']})"
+        if panel.get("selection"):
+            caption += f"      {panel['selection']}"
         ax.text(
             0.06,
             y + 0.28,
-            f"{panel['category']}   ({slice_var} slice {panel['slice_idx']})",
+            caption,
             ha="left",
             va="center",
             fontsize=9,
@@ -504,7 +533,7 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
             ax.text(
                 label_cols + n_cols / 2.0,
                 y + 0.5,
-                "no shapes written for this slice",
+                "no shapes written for this category",
                 ha="center",
                 va="center",
                 fontsize=8,
@@ -524,7 +553,7 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
         ax.text(
             label_cols - 0.12,
             y + 0.5,
-            "HME (GeV)",
+            bin_var,
             ha="right",
             va="center",
             fontsize=7,
@@ -619,8 +648,8 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
     fig.text(
         0.5,
         FOOTER_H / height * 0.62,
-        "Nominal yields ± MC-statistical error per HME bin, as written by the rebinning "
-        "step and read by CreateDatacardsTask.",
+        f"Nominal yields ± MC-statistical error per {bin_var} bin, as written by the "
+        "rebinning step and read by CreateDatacardsTask.",
         ha="center",
         va="center",
         fontsize=7,
@@ -630,7 +659,7 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
         0.5,
         FOOTER_H / height * 0.24,
         "Negative content is boxed and printed in red.    "
-        "Cell shade: log magnitude within the slice.    " + note,
+        "Cell shade: log magnitude within the panel.    " + note,
         ha="center",
         va="center",
         fontsize=7,
@@ -639,14 +668,25 @@ def draw_page(fig, panels, n_cols, header, param_name, slice_var, note):
 
 
 def draw_pages(rows, pdf, cfg, knobs, param_name, note):
-    """One page per (era, mass, channel, base category)."""
+    """One page per (era, mass, lepton channel), every jet category on it.
+
+    The jet categories of one channel are stacked down the page in configuration order
+    (res2b, boosted, recovery), each followed by its slices, so a mass point reads as
+    three pages -- one per lepton channel -- rather than one per category.
+    """
     slice_var = knobs.get("slice_var", "DNN")
+    bin_var = knobs["bin_var"]
+
+    # configuration order of the base categories; anything unlisted goes last
+    base_rank = {}
+    for c in cfg.get("categories", []):
+        base_rank.setdefault(CategoryNaming(knobs["category_pattern"]).split(c)[0], len(base_rank))
 
     index = {}
     for r in rows:
-        key = (r["era"], r["mass"], r["channel"], r["base_category"])
+        key = (r["era"], r["mass"], r["channel"])
         index.setdefault(key, {}).setdefault(
-            (r["slice_idx"], r["category"]), {}
+            (r["base_category"], r["slice_idx"], r["category"]), {}
         ).setdefault(r["process"], []).append(r)
 
     signal_procs = {r["process"] for r in rows if r["is_signal"]}
@@ -664,19 +704,40 @@ def draw_pages(rows, pdf, cfg, knobs, param_name, note):
     bkg_procs += [p for p in sorted(present) if p not in bkg_procs]
 
     n_pages = 0
-    for key in sorted(index, key=lambda k: (k[0], k[1], k[2], k[3])):
-        era, mass, channel, base = key
+    for key in sorted(index, key=lambda k: (k[0], k[1], k[2])):
+        era, mass, channel = key
         slices = index[key]
-        slice_keys = sorted(slices, key=lambda s: (s[0] if s[0] is not None else -1))
+        slice_keys = sorted(
+            slices,
+            key=lambda s: (
+                base_rank.get(s[0], len(base_rank)),
+                s[0],
+                s[1] if s[1] is not None else -1,
+            ),
+        )
+        n_slices_of = {}
+        for base, _, _ in slice_keys:
+            n_slices_of[base] = n_slices_of.get(base, 0) + 1
 
         panels = []
-        for idx, category in slice_keys:
+        for base, idx, category in slice_keys:
             rows_by_proc, edges, order, n_bins = build_panel(
-                slices[(idx, category)], bkg_procs, signal_procs
+                slices[(base, idx, category)], bkg_procs, signal_procs
             )
             panels.append(
                 {
-                    "slice_idx": idx,
+                    # A base category cut into a single slice (an HME box) has no
+                    # slice to name, and "(HME slice 0)" would only mislead.
+                    "slice_idx": idx if n_slices_of[base] > 1 else None,
+                    "selection": next(
+                        (
+                            r["selection"]
+                            for rs in slices[(base, idx, category)].values()
+                            for r in rs
+                            if r.get("selection")
+                        ),
+                        "",
+                    ),
                     "category": category,
                     "rows_by_proc": rows_by_proc,
                     "edges": edges,
@@ -684,16 +745,19 @@ def draw_pages(rows, pdf, cfg, knobs, param_name, note):
                     "n_bins": n_bins,
                 }
             )
-        n_cols = max((p["n_bins"] for p in panels), default=1)
+        # At least MIN_COLS wide: the page width follows the bin count, and with the
+        # 2-3 bin categories a box binning produces the footer ran off both edges.
+        n_cols = max(max((p["n_bins"] for p in panels), default=1), MIN_COLS)
 
         fig = plt.figure(facecolor=SURFACE)
         draw_page(
             fig,
             panels,
             n_cols,
-            f"{era}    {param_name} = {mass} GeV    {channel}    {base}",
+            f"{era}    {param_name} = {mass} GeV    {channel}",
             param_name,
             slice_var,
+            bin_var,
             note,
         )
         pdf.savefig(fig, facecolor=SURFACE)
@@ -718,6 +782,14 @@ def main():
         default=None,
         help="Binning YAML, for category_pattern and slice_var. Defaults to the "
         "datacard configuration's own category_pattern.",
+    )
+    p.add_argument(
+        "--bin-var",
+        default=None,
+        help="Label for the axis the fit bins are on. Defaults to 'HME (GeV)' for a "
+        "configuration that declares a category_pattern -- its categories are DNN "
+        "slices, so the surviving axis is the mass -- and to 'DNN score' for one that "
+        "does not, where the bins are the discriminant itself.",
     )
     p.add_argument("--output", required=True, help="Directory for yields.csv/.pdf.")
     p.add_argument("--era", action="append", default=None, help="Repeatable.")
@@ -761,17 +833,28 @@ def main():
         group = eras_cfg[0]
     source_eras = cfg.get("era_groups", {}).get(group, [group])
 
+    # Which axis the fit bins sit on follows from whether the categories are sliced.
+    # A configuration with a category_pattern reads 2D shapes cut into DNN slices, so the
+    # axis left inside a category is the mass; one without reads the discriminant itself,
+    # binned in place. --bin-var overrides, for a third case neither describes.
+    sliced = cfg.get("category_pattern") is not None
     knobs = {
         "category_pattern": cfg.get(
             "category_pattern", "{base_category}_dnn{slice_idx}"
         ),
         "slice_var": "DNN",
+        "bin_var": args.bin_var or ("HME (GeV)" if sliced else "DNN score"),
         "era_group": group,
     }
     if args.binning_config:
         b = load_config(args.binning_config)
         knobs["category_pattern"] = b.get("category_pattern", knobs["category_pattern"])
         knobs["slice_var"] = b.get("slice_var", knobs["slice_var"])
+        # An HME box selects on HME and bins the DNN, the reverse of the DNN slices the
+        # default above assumes -- without this every box page labelled DNN-score bin
+        # edges as "HME (GeV)".
+        if args.bin_var is None and str(knobs["slice_var"]).upper() == "HME":
+            knobs["bin_var"] = "DNN score"
 
     masses = args.mass or next(
         e["param_values"] for e in cfg["processes"] if e.get("is_signal")
