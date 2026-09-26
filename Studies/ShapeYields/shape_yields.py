@@ -680,7 +680,9 @@ def draw_pages(rows, pdf, cfg, knobs, param_name, note):
     # configuration order of the base categories; anything unlisted goes last
     base_rank = {}
     for c in cfg.get("categories", []):
-        base_rank.setdefault(CategoryNaming(knobs["category_pattern"]).split(c)[0], len(base_rank))
+        base_rank.setdefault(
+            CategoryNaming(knobs["category_pattern"]).split(c)[0], len(base_rank)
+        )
 
     index = {}
     for r in rows:
