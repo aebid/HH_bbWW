@@ -86,6 +86,28 @@ pandas without reshaping.
 page is a slide. Cell shade is log magnitude within the slice; negative content is boxed
 and printed in red.
 
+## The shape book
+
+`shape_book.py` draws the same shapes as plots, one page per mass: the channels as rows and
+the categories as columns. That is everything the fit sees at that mass, on one page.
+Each panel has the stacked backgrounds with their MC-stat band and the summed signal (log
+scale), and is labelled with the selection its category stands for, read from the
+`binning.json` beside the shapes: "670 < HME < 1170" for an HME window, the DNN range for a
+DNN slice.
+
+```
+python3 Studies/ShapeYields/shape_book.py \
+    --input /eos/user/d/daebi/HH_bbWW/<production>/Hists_preprocessed/Run3_Early \
+    --config config/Datacards/x_hh_bbww_DL_run3.yaml \
+    --output Studies/ShapeYields/output/<production>
+```
+
+It writes `shapes_<era-group>.pdf`, for the era group only, since that sum is what the
+fit sees. `--from-csv yields.csv --binning-json <path>` redraws from a CSV without reading
+the shapes, and `--mass` and `--channel` narrow the run. `--x-name` and `--y-name` name the
+2D input's axes (defaults "DNN score" and "HME [GeV]"); each panel is labelled with
+whichever one it is binned along.
+
 ## The uncv2 run
 
 Already made, kept beside the shapes it was read from:
