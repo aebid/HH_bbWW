@@ -256,12 +256,10 @@ def run_fold(cfg, i_fold, args, rng):
 def plot_evolution(d, ranked, regime, out_dir, top_n):
     """
     Line plots of the most important inputs vs mass hypothesis, one per metric: single inputs
-    (top) and correlated groups (bottom). Points are the mean over cycles, bands its uncertainty
+    (top) and correlated groups (bottom), chosen and ordered by that metric. Points are the mean over cycles, bands its uncertainty
     (spread between cycles / sqrt(n cycles)).
     """
     masses = sorted(d["mass"].unique())
-    singles = [f for f in ranked if not f.startswith("group:")][:top_n]
-    groups = [f for f in ranked if f.startswith("group:")]
     g = d.groupby(["feature", "mass"])
     metrics_ = [
         ("d_auc", "AUC loss when shuffled\nAUC - AUC_shuffled", ""),
@@ -270,6 +268,17 @@ def plot_evolution(d, ranked, regime, out_dir, top_n):
     for col, label, tag in metrics_:
         mean = g[col].mean()
         err = (g[col].std() / np.sqrt(g[col].count())).fillna(0)
+        # Choose and order the inputs by the plotted metric: its share at each mass (sum over
+        # single inputs = 1), averaged over masses
+        per_mass = mean.clip(lower=0).unstack()
+        single = [f for f in ranked if not f.startswith("group:")]
+        share = (per_mass / per_mass.loc[single].sum()).mean(axis=1)
+        singles = share.loc[single].sort_values(ascending=False).index[:top_n].tolist()
+        groups = (
+            share.loc[[f for f in ranked if f.startswith("group:")]]
+            .sort_values(ascending=False)
+            .index.tolist()
+        )
         fig, axes = plt.subplots(
             2,
             1,
