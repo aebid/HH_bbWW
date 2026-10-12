@@ -131,6 +131,18 @@ Result for v1: `02_limits_v1_combined.png`.
   lead below 350 GeV, `MX_reduced`, `bjet1_pt`, `HT_total` and the MET inputs above 1 TeV.
   Boosted: `ll_bb_dR` and the `MX_reduced`+`bbllmet_mass` group lead below 600 GeV, `MT2_bb`
   at 600–1000 GeV, `MT2_blbl1/2` and the MET group above 1.2 TeV.
+- **b-tag vs `ll_pt` across models.** Same method on the production model (v2610 parity files,
+  its own inputs, 10 masses; `production_v1_on_v2610/feature_importance`). Absolute AUC loss
+  at 300 / 400 / 600 GeV, production | v1 | v2b: `bjet1_btagPNetB` 0.163/0.088/0.019 |
+  0.146/0.064/0.014 | 0.151/0.066/0.014; `ll_pt` 0.029/0.021/0.007 | 0.044/0.020/0.005 |
+  0.085/0.050/0.018. The b-tag scores are the leading single input at low mass in all three
+  models and contribute the same; the baseline AUCs agree within 0.008. The production model
+  uses the lepton pT too (`lep1_pt` above `ll_pt` and the b-tag scores at 1 TeV). v2b, without
+  `MT`, `min_lmet_mt` and `ll_bb_pt_ratio` (|r| = 0.1–0.3 with `ll_pt`), puts 2–4× more of it
+  on `ll_pt` at the same AUC: a shift of attribution, not new information. Shuffling `ll_pt`
+  alone costs more than shuffling it with `lep1_pt`, so its single-input value is inflated by
+  inconsistent lepton momenta. The b-tag dominance in the earlier production plots came from
+  the `train_pdnn.py` scan below, which favours mass-independent inputs.
 - **Not used: the scan built into `train_pdnn.py`** (`feature_importance_evolution_lines_*`,
   `per_mass_feature_importance_*`). At each hypothesis it labels the signal of all masses as
   signal, unweighted (boosted: 96% of the events), so the loss mostly measures the rejection of
