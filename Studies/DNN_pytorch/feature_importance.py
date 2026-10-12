@@ -28,6 +28,7 @@ import pandas as pd
 import onnxruntime as ort
 import torch
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 from sklearn.metrics import roc_auc_score
 
 from src.model_helper import (
@@ -410,7 +411,13 @@ def summarize(cfg, out_dir, top_n=12):
             .loc[summary.index]
         )
         fig, ax = plt.subplots(figsize=(1 + 0.6 * hm.shape[1], 0.3 * hm.shape[0] + 1.5))
-        im = ax.imshow(hm.values, aspect="auto", cmap="viridis")
+        # Log colour scale: values span 0.01 to > 100; anything below 0.01 (or negative) at the floor
+        im = ax.imshow(
+            np.clip(hm.values, 1e-2, None),
+            aspect="auto",
+            cmap="viridis",
+            norm=LogNorm(vmin=1e-2, vmax=max(np.nanmax(hm.values), 1e-1)),
+        )
         ax.set_xticks(range(hm.shape[1]))
         ax.set_xticklabels(hm.columns, rotation=45)
         ax.set_yticks(range(hm.shape[0]))
@@ -418,7 +425,7 @@ def summarize(cfg, out_dir, top_n=12):
             [f if len(f) < 60 else f[:57] + "..." for f in hm.index], fontsize=7
         )
         ax.set_xlabel("$m_X$ [GeV]")
-        plt.colorbar(im, label="relative AUC loss")
+        plt.colorbar(im, label="relative AUC loss (log, floor 0.01)")
         ax.set_title(f"{regime}: importance vs mass")
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, f"importance_vs_mass_{regime}.png"), dpi=150)
