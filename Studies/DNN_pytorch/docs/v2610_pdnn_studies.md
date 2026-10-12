@@ -139,8 +139,9 @@ Result for v1: `02_limits_v1_combined.png`.
   its own inputs, 10 masses; `production_v1_on_v2610/feature_importance`). Absolute AUC loss
   at 300 / 400 / 600 GeV, production | v1 | v2b: `bjet1_btagPNetB` 0.163/0.088/0.019 |
   0.146/0.064/0.014 | 0.151/0.066/0.014; `ll_pt` 0.029/0.021/0.007 | 0.044/0.020/0.005 |
-  0.085/0.050/0.018. The b-tag scores are the leading single input at low mass in all three
-  models and contribute the same; the baseline AUCs agree within 0.008. The production model
+  0.085/0.050/0.018. The b-tag scores contribute the same in all three models (baseline AUCs
+  within 0.008). `bjet1_btagPNetB` is the leading single input at 250–500 GeV in the production
+  model but only at 260–400 GeV in v2b, where `ll_pt` ranks above it from 500 GeV up. The production model
   uses the lepton pT too (`lep1_pt` above `ll_pt` and the b-tag scores at 1 TeV). v2b, without
   `MT`, `min_lmet_mt` and `ll_bb_pt_ratio` (|r| = 0.1–0.3 with `ll_pt`), puts 2–4× more of it
   on `ll_pt` at the same AUC: a shift of attribution, not new information. Shuffling `ll_pt`
