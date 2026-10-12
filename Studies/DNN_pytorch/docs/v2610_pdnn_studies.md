@@ -121,6 +121,21 @@ Result for v1: `02_limits_v1_combined.png`.
   `ll_dR_scaled`, fat-jet mass. Negligible: `met_ll_dphi`, `fatbjet_tau4`, `lep1_pt`,
   `DeepHME_mass_error_rel`, `ll_dphi`, `MT`, `fatbjet_tau3`.
 - `DeepHME_mass_error_rel` is not used by either network and is dropped.
+- **v2b at all trained masses.** Same method on v2b at all 30 masses (boosted: 350–2000 GeV;
+  250–320 GeV have < 200 boosted signal events per parity and are skipped), with all boosted
+  background events (10% in resolved). Line plots of the top 12 inputs and the correlated groups
+  vs mass, band = uncertainty of the mean over cycles:
+  `06_importance_evolution_v2b_{resolved,boosted}.png` (relative AUC loss),
+  `06_importance_evolution_loss_v2b_*.png` (class-balanced loss). Resolved: the mass-like group
+  is ×1.3–3 below 350 GeV and rises to ×100 above 1.4 TeV; b-tag scores, `ll_pt` and `bbllmet_mass`
+  lead below 350 GeV, `MX_reduced`, `bjet1_pt`, `HT_total` and the MET inputs above 1 TeV.
+  Boosted: `ll_bb_dR` and the `MX_reduced`+`bbllmet_mass` group lead below 600 GeV, `MT2_bb`
+  at 600–1000 GeV, `MT2_blbl1/2` and the MET group above 1.2 TeV.
+- **Not used: the scan built into `train_pdnn.py`** (`feature_importance_evolution_lines_*`,
+  `per_mass_feature_importance_*`). At each hypothesis it labels the signal of all masses as
+  signal, unweighted (boosted: 96% of the events), so the loss mostly measures the rejection of
+  off-mass signal; shuffling a mass-sensitive input lowers it, and the clip at 0 hides this
+  (v2b boosted at 1.5 TeV: 90% of the inputs clipped). Each `_foldsN` file is one cycle.
 
 ## 9. Pruned models
 

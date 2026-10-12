@@ -11,6 +11,8 @@ hides the information of a shuffled feature), is shuffled in turn and the change
   - class-balanced cross-entropy (each output class with equal total weight)
 is recorded. Mass-scaled features (*_scaled) are recomputed from their shuffled base.
 Results are averaged over the cycles, with the spread between cycles as the uncertainty.
+By default every mass in the config's signal_mass_points is scanned; importance_evolution_*.png
+show the top inputs and the correlated groups vs mass.
 
 Usage:
     python3 feature_importance.py --config model_configs/v2610_pDNN_v1.yaml [--folds 0]
@@ -175,8 +177,12 @@ def run_fold(cfg, i_fold, args, rng):
     path = os.path.join(cfg["input_folder"], f"nParity{val_parity}_Merged.root")
     df = load_physical_fold(path, None, feature_map, cfg["extra_variables"], cfg)
     df = df[df["class_targets_multiclass"] >= 0]
+    # The boosted background is small: keep more of it (default all) for a stable AUC
+    bkg_fraction = np.where(
+        df["boosted"].values == 1, args.boosted_bkg_fraction, args.bkg_fraction
+    )
     keep = (df["class_targets_multiclass"].values == 0) | (
-        rng.random(len(df)) < args.bkg_fraction
+        rng.random(len(df)) < bkg_fraction
     )
     df = df[keep].reset_index(drop=True)
     print(
@@ -243,7 +249,80 @@ def run_fold(cfg, i_fold, args, rng):
     return out
 
 
-def summarize(cfg, out_dir):
+def plot_evolution(d, ranked, regime, out_dir, top_n):
+    """
+    Line plots of the most important inputs vs mass hypothesis, one per metric: single inputs
+    (top) and correlated groups (bottom). Points are the mean over cycles, bands its uncertainty
+    (spread between cycles / sqrt(n cycles)).
+    """
+    masses = sorted(d["mass"].unique())
+    singles = [f for f in ranked if not f.startswith("group:")][:top_n]
+    groups = [f for f in ranked if f.startswith("group:")]
+    g = d.groupby(["feature", "mass"])
+    metrics_ = [
+        ("d_auc_rel", "relative AUC loss\n(AUC - AUC_shuffled) / (1 - AUC)", ""),
+        ("d_loss", "increase of class-balanced\ncross-entropy", "_loss"),
+    ]
+    for col, label, tag in metrics_:
+        mean = g[col].mean()
+        err = (g[col].std() / np.sqrt(g[col].count())).fillna(0)
+        fig, axes = plt.subplots(
+            2,
+            1,
+            figsize=(13, 10),
+            sharex=True,
+            gridspec_kw={"height_ratios": [2.2, 1]},
+        )
+        for ax, names, title in [
+            (axes[0], singles, f"top {len(singles)} single inputs"),
+            (axes[1], groups, "correlated groups (|r| > threshold), shuffled together"),
+        ]:
+            cmap = plt.cm.tab20 if len(names) > 10 else plt.cm.tab10
+            for i, name in enumerate(names):
+                m = mean.loc[name].reindex(masses)
+                e = err.loc[name].reindex(masses)
+                color = cmap(i % cmap.N)
+                ax.plot(
+                    masses,
+                    m,
+                    marker="o",
+                    markersize=3.5,
+                    linewidth=1.8,
+                    color=color,
+                    label=name.replace("group:", "").replace("+", " + "),
+                )
+                ax.fill_between(masses, m - e, m + e, color=color, alpha=0.18, lw=0)
+            if col == "d_auc_rel":
+                ax.set_yscale("log")
+                vals = mean.loc[names].values
+                floor = 0.5 * vals[vals > 0].min() if (vals > 0).any() else 1e-2
+                ax.set_ylim(bottom=max(1e-2, floor))
+            else:
+                ax.axhline(0, color="black", linewidth=0.8)
+            ax.set_ylabel(label)
+            ax.set_title(title, fontsize=11, loc="left")
+            ax.grid(True, which="major", linestyle="--", alpha=0.4)
+            ax.legend(bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=8.5)
+        fig.suptitle(
+            f"{regime.upper()}: permutation importance vs mass hypothesis "
+            "(band: uncertainty of the mean over cycles)",
+            fontsize=13,
+            fontweight="bold",
+        )
+        axes[1].set_xlabel("$m_X$ [GeV]", fontsize=12)
+        # Every mass as a minor tick, labels on a subset that does not overlap
+        labelled = [m for m in masses if m in (250, 300, 350, 400) or m % 100 == 0]
+        axes[1].set_xticks(labelled)
+        axes[1].set_xticks(masses, minor=True)
+        axes[1].tick_params(axis="x", rotation=60, labelsize=9)
+        plt.tight_layout()
+        plt.savefig(
+            os.path.join(out_dir, f"importance_evolution{tag}_{regime}.png"), dpi=200
+        )
+        plt.close(fig)
+
+
+def summarize(cfg, out_dir, top_n=12):
     files = sorted(f for f in os.listdir(out_dir) if f.startswith("importance_cycle"))
     folds = [json.load(open(os.path.join(out_dir, f))) for f in files]
     rows = []
@@ -344,6 +423,8 @@ def summarize(cfg, out_dir):
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, f"importance_vs_mass_{regime}.png"), dpi=150)
         plt.close(fig)
+
+        plot_evolution(d, list(summary.index), regime, out_dir, top_n)
     print(f"\n--> Wrote importance_*.csv / .png in {out_dir}")
 
 
@@ -357,10 +438,20 @@ def main():
         "--masses",
         type=int,
         nargs="+",
-        default=[250, 300, 350, 400, 500, 600, 800, 1000, 1500, 2000],
+        default=None,
+        help="Mass hypotheses (default: the config's signal_mass_points)",
+    )
+    parser.add_argument(
+        "--top-n", type=int, default=12, help="Inputs in the evolution line plot"
     )
     parser.add_argument(
         "--bkg-fraction", type=float, default=0.1, help="Background subsample"
+    )
+    parser.add_argument(
+        "--boosted-bkg-fraction",
+        type=float,
+        default=1.0,
+        help="Background subsample in the boosted regime",
     )
     parser.add_argument("--repeats", type=int, default=2, help="Shuffles per feature")
     parser.add_argument("--corr-threshold", type=float, default=0.8)
@@ -382,6 +473,8 @@ def main():
         cfg["output_folder"], "feature_importance"
     )
     os.makedirs(out_dir, exist_ok=True)
+    if args.masses is None:
+        args.masses = cfg["signal_mass_points"]
     if not args.summarize:
         folds = args.folds if args.folds is not None else range(cfg.get("nParity", 4))
         for i_fold in folds:
@@ -391,7 +484,7 @@ def main():
                 os.path.join(out_dir, f"importance_cycle{i_fold}.json"), "w"
             ) as f:
                 json.dump(res, f, indent=1)
-    summarize(cfg, out_dir)
+    summarize(cfg, out_dir, args.top_n)
 
 
 if __name__ == "__main__":
