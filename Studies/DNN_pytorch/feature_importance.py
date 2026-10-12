@@ -11,6 +11,9 @@ hides the information of a shuffled feature), is shuffled in turn and the change
   - class-balanced cross-entropy (each output class with equal total weight)
 is recorded. Mass-scaled features (*_scaled) are recomputed from their shuffled base.
 Results are averaged over the cycles, with the spread between cycles as the uncertainty.
+Inputs are ranked by their share of the AUC loss at each mass (AUC loss / sum of the AUC losses of
+all single inputs at that mass), averaged over masses, so every mass counts equally; the relative
+AUC loss grows as 1 - AUC -> 0 at high mass and is kept in the CSV only.
 By default every mass in the config's signal_mass_points is scanned; importance_evolution_*.png
 show the top inputs and the correlated groups vs mass.
 
@@ -261,7 +264,7 @@ def plot_evolution(d, ranked, regime, out_dir, top_n):
     groups = [f for f in ranked if f.startswith("group:")]
     g = d.groupby(["feature", "mass"])
     metrics_ = [
-        ("d_auc_rel", "relative AUC loss\n(AUC - AUC_shuffled) / (1 - AUC)", ""),
+        ("d_auc", "AUC loss when shuffled\nAUC - AUC_shuffled", ""),
         ("d_loss", "increase of class-balanced\ncross-entropy", "_loss"),
     ]
     for col, label, tag in metrics_:
@@ -293,11 +296,11 @@ def plot_evolution(d, ranked, regime, out_dir, top_n):
                     label=name.replace("group:", "").replace("+", " + "),
                 )
                 ax.fill_between(masses, m - e, m + e, color=color, alpha=0.18, lw=0)
-            if col == "d_auc_rel":
+            if col == "d_auc":
                 ax.set_yscale("log")
                 vals = mean.loc[names].values
-                floor = 0.5 * vals[vals > 0].min() if (vals > 0).any() else 1e-2
-                ax.set_ylim(bottom=max(1e-2, floor))
+                floor = 0.5 * vals[vals > 0].min() if (vals > 0).any() else 1e-5
+                ax.set_ylim(bottom=max(1e-5, floor))
             else:
                 ax.axhline(0, color="black", linewidth=0.8)
             ax.set_ylabel(label)
@@ -349,32 +352,41 @@ def summarize(cfg, out_dir, top_n=12):
         return "other"
 
     df["band"] = df["mass"].map(band)
+    # Share of the AUC loss at each mass and cycle, relative to the sum over the single inputs
+    single = ~df["feature"].str.startswith("group:")
+    total = (
+        df[single]
+        .assign(pos=df.loc[single, "d_auc"].clip(lower=0))
+        .groupby(["regime", "cycle", "mass"])["pos"]
+        .sum()
+    )
+    df["share"] = df["d_auc"].clip(lower=0) / df.set_index(
+        ["regime", "cycle", "mass"]
+    ).index.map(total).values
     for regime in df["regime"].unique():
         d = df[df["regime"] == regime]
         # mean over masses within each cycle, then mean and spread over cycles
         per_cycle = d.groupby(["feature", "cycle"])[
-            ["d_auc_rel", "d_auc", "d_loss"]
+            ["share", "d_auc", "d_auc_rel", "d_loss"]
         ].mean()
         summary = per_cycle.groupby("feature").agg(["mean", "std"])
         summary.columns = [f"{a}_{b}" for a, b in summary.columns]
         for b in MASS_BANDS:
-            summary[f"d_auc_rel_{b}"] = (
-                d[d["band"] == b].groupby("feature")["d_auc_rel"].mean()
-            )
-        summary = summary.sort_values("d_auc_rel_mean", ascending=False)
+            summary[f"share_{b}"] = d[d["band"] == b].groupby("feature")["share"].mean()
+        summary = summary.sort_values("share_mean", ascending=False)
         summary.to_csv(os.path.join(out_dir, f"importance_{regime}.csv"))
         print(
-            f"\n=== {regime}: relative AUC loss when shuffled (mean over masses and cycles)"
+            f"\n=== {regime}: share of the AUC loss when shuffled (mean over masses and cycles)"
         )
         print(
             summary[
                 [
-                    "d_auc_rel_mean",
-                    "d_auc_rel_std",
-                    "d_auc_rel_low",
-                    "d_auc_rel_mid",
-                    "d_auc_rel_high",
-                    "d_loss_mean",
+                    "share_mean",
+                    "share_std",
+                    "share_low",
+                    "share_mid",
+                    "share_high",
+                    "d_auc_mean",
                 ]
             ]
             .round(4)
@@ -388,14 +400,15 @@ def summarize(cfg, out_dir, top_n=12):
             "darkorange" if f.startswith("group:") else "royalblue" for f in s.index
         ]
         ax.barh(
-            range(len(s)), s["d_auc_rel_mean"], xerr=s["d_auc_rel_std"], color=colors
+            range(len(s)), s["share_mean"], xerr=s["share_std"], color=colors
         )
         ax.set_yticks(range(len(s)))
         ax.set_yticklabels(
             [f if len(f) < 60 else f[:57] + "..." for f in s.index], fontsize=7
         )
         ax.set_xlabel(
-            "relative AUC loss when shuffled, (AUC - AUC_shuffled) / (1 - AUC)"
+            "share of the AUC loss when shuffled (sum of single inputs = 1 at each mass),\n"
+            "mean over masses"
         )
         ax.set_title(f"{regime}: permutation importance (orange: correlated groups)")
         ax.grid(axis="x", alpha=0.3)
@@ -405,18 +418,18 @@ def summarize(cfg, out_dir, top_n=12):
 
         # Heat map: feature x mass
         hm = (
-            d.groupby(["feature", "mass"])["d_auc_rel"]
+            d.groupby(["feature", "mass"])["share"]
             .mean()
             .unstack()
             .loc[summary.index]
         )
         fig, ax = plt.subplots(figsize=(1 + 0.6 * hm.shape[1], 0.3 * hm.shape[0] + 1.5))
-        # Log colour scale: values span 0.01 to > 100; anything below 0.01 (or negative) at the floor
+        # Log colour scale (groups can exceed the single inputs); below 0.001 at the floor
         im = ax.imshow(
-            np.clip(hm.values, 1e-2, None),
+            np.clip(hm.values, 1e-3, None),
             aspect="auto",
             cmap="viridis",
-            norm=LogNorm(vmin=1e-2, vmax=max(np.nanmax(hm.values), 1e-1)),
+            norm=LogNorm(vmin=1e-3, vmax=max(np.nanmax(hm.values), 1e-1)),
         )
         ax.set_xticks(range(hm.shape[1]))
         ax.set_xticklabels(hm.columns, rotation=45)
@@ -425,7 +438,7 @@ def summarize(cfg, out_dir, top_n=12):
             [f if len(f) < 60 else f[:57] + "..." for f in hm.index], fontsize=7
         )
         ax.set_xlabel("$m_X$ [GeV]")
-        plt.colorbar(im, label="relative AUC loss (log, floor 0.01)")
+        plt.colorbar(im, label="share of the AUC loss at this mass (log, floor 0.001)")
         ax.set_title(f"{regime}: importance vs mass")
         plt.tight_layout()
         plt.savefig(os.path.join(out_dir, f"importance_vs_mass_{regime}.png"), dpi=150)

@@ -125,12 +125,16 @@ Result for v1: `02_limits_v1_combined.png`.
   250–320 GeV have < 200 boosted signal events per parity and are skipped), with all boosted
   background events (10% in resolved). Line plots of the top 12 inputs and the correlated groups
   vs mass, band = uncertainty of the mean over cycles:
-  `06_importance_evolution_v2b_{resolved,boosted}.png` (relative AUC loss),
-  `06_importance_evolution_loss_v2b_*.png` (class-balanced loss). Resolved: the mass-like group
-  is ×1.3–3 below 350 GeV and rises to ×100 above 1.4 TeV; b-tag scores, `ll_pt` and `bbllmet_mass`
-  lead below 350 GeV, `MX_reduced`, `bjet1_pt`, `HT_total` and the MET inputs above 1 TeV.
-  Boosted: `ll_bb_dR` and the `MX_reduced`+`bbllmet_mass` group lead below 600 GeV, `MT2_bb`
-  at 600–1000 GeV, `MT2_blbl1/2` and the MET group above 1.2 TeV.
+  `06_importance_evolution_v2b_{resolved,boosted}.png` (absolute AUC loss, AUC − AUC_shuffled,
+  log scale), `06_importance_evolution_loss_v2b_*.png` (multiclass class-balanced loss, all output
+  nodes). Inputs are ranked by their share of the AUC loss at each mass (sum over single inputs
+  = 1), averaged over masses. The relative AUC loss, ΔAUC / (1 − AUC), is not plotted: 1 − AUC
+  falls to 2·10⁻⁴ at 2 TeV and inflates it at high mass. The AUC loss of every input falls by
+  10–1000× from 300 GeV to 2 TeV (less left to lose as AUC → 1). Resolved: `bjet1_btagPNetB`
+  leads at 260–400 GeV, `ll_pt`, the b-tag scores and `bb_mass` at 450–750 GeV, `MX_reduced` and
+  `bjet1_pt` above 800 GeV; the mass-like group (shuffled together) is the largest at every mass.
+  Boosted: `ll_bb_dR` and the `MX_reduced`+`bbllmet_mass` group lead below 600 GeV, `MT2_bb` and
+  `MT2_ll` at 600–1000 GeV, the MT2 and MET inputs above 1.2 TeV.
 - **b-tag vs `ll_pt` across models.** Same method on the production model (v2610 parity files,
   its own inputs, 10 masses; `production_v1_on_v2610/feature_importance`). Absolute AUC loss
   at 300 / 400 / 600 GeV, production | v1 | v2b: `bjet1_btagPNetB` 0.163/0.088/0.019 |
