@@ -98,6 +98,31 @@ processes:
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
+  # The smaller backgrounds, so the card covers every background the shapes carry. Each
+  # is a few percent of the background at most where the signal is (v2610,
+  # Run3_2022+2023+2023BPix: H 2-11%, ttV <=6%, VVV and W <=1%), and their MC is thin
+  # in places, so a category may hold none of one of them.
+  - process: ttV
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+
+  - process: H
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+
+  - process: VVV
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+
+  # W+jets: in a dilepton selection this is a nonprompt-lepton background, taken from MC.
+  - process: W
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
+
   # Single merged background template for the boosted slices, all three channels.
   #
   # Why: DY has no usable MC statistics in the b-tagged same-flavour categories.
@@ -153,6 +178,10 @@ processes:
       - DY
       - ST
       - VV
+      - ttV
+      - H
+      - VVV
+      - W
     categories:
       - SR/boosted
 
@@ -636,6 +665,44 @@ uncertainties:
     # number from the diboson theory reference; left as-is rather than guessed.
     value: 0.005
 
+  # The histograms carry single Higgs as one process (ggH + VBFH + VH + ttH), so it gets
+  # one normalisation. ttH's numbers are used: it has the largest uncertainty of the
+  # production modes and is expected to dominate a two-b-jet dilepton selection. From
+  # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWG136TeVxsec_extrap (13.6 TeV,
+  # mH = 125): ttH +6.0 -9.3 % (QCD scale), +-3.5 % (PDF+alpha_s); for reference ggH
+  # +4.6 -6.7 / 3.2, VBF +0.5 -0.3 / 2.1, WH +0.4 -0.7 / 1.8, ZH +3.7 -3.2 / 1.6.
+  # Split per production mode if the histograms ever separate them.
+  - name: QCD_scale_H
+    type: lnN
+    processes:
+      - H
+    value: [ -0.093, 0.060 ]
+
+  # ttV (ttZ + ttW): there is no LHC Top WG 13.6 TeV recommendation yet. +-12 % covers
+  # the NLO QCD scale uncertainty of both ttZ and ttW; replace with the official numbers
+  # once they exist.
+  - name: QCD_scale_ttV
+    type: lnN
+    processes:
+      - ttV
+    value: [ -0.12, 0.12 ]
+
+  # VVV: no theory reference collected. PROPOSAL, to be confirmed.
+  - name: QCD_scale_VVV
+    type: lnN
+    processes:
+      - VVV
+    value: 0.15
+
+  # W+jets enters a dilepton selection through a nonprompt lepton, which MC models
+  # poorly; this is a normalisation uncertainty on that, not a cross-section one.
+  # PROPOSAL, to be confirmed.
+  - name: norm_W
+    type: lnN
+    processes:
+      - W
+    value: 0.30
+
   - name: PDF_alphas
     hasMultipleValues: True
     type: lnN
@@ -652,6 +719,14 @@ uncertainties:
         type: lnN
         processes:
           - ST
+      - value: 0.035
+        type: lnN
+        processes:
+          - H
+      - value: 0.03
+        type: lnN
+        processes:
+          - ttV
 
   - name: top_mass
     hasMultipleValues: True
@@ -671,8 +746,9 @@ uncertainties:
   # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
   #
   # GluGluToRadion_bbWW_1L is the single-lepton signal and is not a process of this dilepton
-  # card; it belongs in these lists when the SL card gains them. Single Higgs and VH
-  # likewise, once they are added as processes.
+  # card; it belongs in these lists when the SL card gains them. The single-Higgs
+  # background H is not in them: it mixes H->bb, WW and tautau in one histogram, and its
+  # branching-ratio uncertainties (1-2 %) are small next to QCD_scale_H.
   #
   # BR_hww covers the whole bbWW signal although the sample is 2B2V: about 4.5 % of it is
   # H->ZZ->2l2nu, which this nuisance over-covers and BR_hzz does not cover at all.
