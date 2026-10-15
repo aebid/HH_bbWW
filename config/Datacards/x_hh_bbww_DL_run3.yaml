@@ -82,10 +82,10 @@ processes:
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
+  # All three channels. In eMu DY is mostly DY->tautau and is not small where the signal
+  # is: v2610, Run3_2022+2023+2023BPix, it is 16-56% of the background in the bins
+  # holding the best half of the signal at MX = 800-1200 (eMu recovery at 1200: 56%).
   - process: DY
-    channels:
-      - eE
-      - muMu
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
@@ -129,16 +129,11 @@ processes:
   # `subprocesses` naming other datacard processes replaces them here, so TT, DY, ST
   # and VV keep their configuration above and simply do not enter the boosted bins.
   #
-  # eMu is included as well. DY is restricted to eE/muMu in its own entry above and
-  # was therefore missing from eMu's boosted background entirely -- not because it is
-  # negligible there: over the 32 eMu boosted slices DY is 0.5% to 32% of the total
-  # background (median 6.5%), with N_eff 1.2-22 (median 5.9, a third of slices below
-  # 4). Merging is what lets it be counted, since the merged shape is assembled from
-  # subprocess histograms by path and does not consult DY's own channel list. So eMu
-  # boosted gains a real background it was previously missing, its DY never has to
-  # stand on its own statistics, and all three channels now describe their boosted
-  # background the same way. Folding DY in leaves zero negative bins in all 32 eMu
-  # slices. DY remains absent from eMu res2b/recovery, which are unchanged.
+  # eMu is included as well, so all three channels describe their boosted background
+  # the same way. eMu boosted DY is 0.5% to 32% of the total background (median 6.5%)
+  # with N_eff 1.2-22 (median 5.9, a third of slices below 4; v2605a, binning_2d), so
+  # here too it never has to stand on its own statistics. Folding DY in leaves zero
+  # negative bins in all 32 eMu slices.
   #
   # Caveat: QCD_scale_TT/DY/ST/VV each match this process through its subprocesses
   # (Uncertainty.appliesTo) and so apply to the whole merged yield rather than to
