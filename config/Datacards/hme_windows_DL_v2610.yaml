@@ -1,0 +1,73 @@
+# Frozen HME windows for the DL channel, v2610 (decided 2026-10-16).
+#
+# Definition: straight-line fits HME_cut = a + b * MX to the HME windows that maximise S/sqrt(B_TT) with >= 95% of
+# the category's signal (Run3_Early, spin 0 bbWW 2l + bbtautau, eE+muMu+eMu, signal and TT summed over the DNN):
+#   res2b    low  = 98.1200 + 0.538263 * MX   (fit to MX 250-1500)
+#            high = -18.9189 + 1.378378 * MX   (fit to MX 250, 260, 270, 280, 300, where the high cut is
+#                   constrained; extrapolated above)
+#   boosted  low  = 64.2077 + 0.685021 * MX   (fit to MX 300-1500)
+#            high = 135.9084 + 1.109257 * MX   (fit to MX 300-1500)
+#   recovery uses the res2b window (no fit of its own; it keeps ~80-92% of the recovery signal).
+# Each cut is rounded OUTWARD to the stored DeepHME_mass grid (low cut down, high cut up), so the window is never
+# smaller than the fit. A cut at the first (last) grid edge includes the underflow (overflow).
+# Stored grid: 78 bins, 0-2000 GeV (10 GeV to 700, 25 to 1000, 50 to 1500, 100 to 2000).
+# Study and plots: /eos/user/d/daebi/HH_bbWW/binning_studies/v2610_hme_window_scan/ (window_versions.png,
+# tt_window_limits_v2.png, stack_plots/stack_lin.pdf).
+fits:
+  res2b:    {low: [98.1200, 0.538263], high: [-18.9189, 1.378378]}
+  recovery: {low: [98.1200, 0.538263], high: [-18.9189, 1.378378]}  # = res2b
+  boosted:  {low: [64.2077, 0.685021], high: [135.9084, 1.109257]}
+# windows[MX][category] = [low, high] in GeV, on the stored grid; signal_fraction = share of that category's
+# signal inside the window (Run3_Early, spin 0).
+windows:
+  250: {res2b: [230, 330], recovery: [230, 330], boosted: [230, 420]}
+  260: {res2b: [230, 340], recovery: [230, 340], boosted: [240, 430]}
+  270: {res2b: [240, 360], recovery: [240, 360], boosted: [240, 440]}
+  280: {res2b: [240, 370], recovery: [240, 370], boosted: [250, 450]}
+  300: {res2b: [250, 400], recovery: [250, 400], boosted: [260, 470]}
+  320: {res2b: [270, 430], recovery: [270, 430], boosted: [280, 500]}
+  350: {res2b: [280, 470], recovery: [280, 470], boosted: [300, 530]}
+  360: {res2b: [290, 480], recovery: [290, 480], boosted: [310, 540]}
+  400: {res2b: [310, 540], recovery: [310, 540], boosted: [330, 580]}
+  450: {res2b: [340, 610], recovery: [340, 610], boosted: [370, 640]}
+  500: {res2b: [360, 680], recovery: [360, 680], boosted: [400, 700]}
+  550: {res2b: [390, 750], recovery: [390, 750], boosted: [440, 750]}
+  600: {res2b: [420, 825], recovery: [420, 825], boosted: [470, 825]}
+  650: {res2b: [440, 900], recovery: [440, 900], boosted: [500, 875]}
+  700: {res2b: [470, 950], recovery: [470, 950], boosted: [540, 925]}
+  750: {res2b: [500, 1050], recovery: [500, 1050], boosted: [570, 975]}
+  800: {res2b: [520, 1100], recovery: [520, 1100], boosted: [610, 1050]}
+  850: {res2b: [550, 1200], recovery: [550, 1200], boosted: [640, 1100]}
+  900: {res2b: [580, 1250], recovery: [580, 1250], boosted: [680, 1150]}
+  1000: {res2b: [630, 1400], recovery: [630, 1400], boosted: [725, 1250]}
+  1100: {res2b: [690, 1500], recovery: [690, 1500], boosted: [800, 1400]}
+  1200: {res2b: [725, 1700], recovery: [725, 1700], boosted: [875, 1500]}
+  1300: {res2b: [775, 1800], recovery: [775, 1800], boosted: [950, 1600]}
+  1400: {res2b: [850, 2000], recovery: [850, 2000], boosted: [1000, 1700]}
+  1500: {res2b: [900, 2000], recovery: [900, 2000], boosted: [1050, 1800]}
+signal_fraction:
+  250: {res2b: 0.958, recovery: 0.858, boosted: 0.285}
+  260: {res2b: 0.953, recovery: 0.850, boosted: 0.733}
+  270: {res2b: 0.955, recovery: 0.870, boosted: 0.853}
+  280: {res2b: 0.954, recovery: 0.864, boosted: 0.903}
+  300: {res2b: 0.959, recovery: 0.875, boosted: 0.932}
+  320: {res2b: 0.936, recovery: 0.832, boosted: 0.915}
+  350: {res2b: 0.936, recovery: 0.840, boosted: 0.953}
+  360: {res2b: 0.928, recovery: 0.815, boosted: 0.922}
+  400: {res2b: 0.930, recovery: 0.812, boosted: 0.937}
+  450: {res2b: 0.926, recovery: 0.806, boosted: 0.935}
+  500: {res2b: 0.942, recovery: 0.830, boosted: 0.952}
+  550: {res2b: 0.945, recovery: 0.839, boosted: 0.954}
+  600: {res2b: 0.948, recovery: 0.847, boosted: 0.969}
+  650: {res2b: 0.954, recovery: 0.869, boosted: 0.978}
+  700: {res2b: 0.950, recovery: 0.866, boosted: 0.977}
+  750: {res2b: 0.948, recovery: 0.873, boosted: 0.978}
+  800: {res2b: 0.950, recovery: 0.882, boosted: 0.972}
+  850: {res2b: 0.949, recovery: 0.891, boosted: 0.970}
+  900: {res2b: 0.945, recovery: 0.892, boosted: 0.963}
+  1000: {res2b: 0.948, recovery: 0.899, boosted: 0.970}
+  1100: {res2b: 0.936, recovery: 0.888, boosted: 0.951}
+  1200: {res2b: 0.945, recovery: 0.907, boosted: 0.960}
+  1300: {res2b: 0.947, recovery: 0.907, boosted: 0.954}
+  1400: {res2b: 0.959, recovery: 0.915, boosted: 0.961}
+  1500: {res2b: 0.951, recovery: 0.916, boosted: 0.964}
