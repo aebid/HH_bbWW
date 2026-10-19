@@ -708,6 +708,11 @@ var_only_boosted: [ ]
 
 unc_to_not_consider_boosted: [ ]
 
+# Groups of eras that are plotted as their sum: HistPlotTask over the eras of a group plots
+# Plots/<group>/..., labelled by config/plot/<group>.yaml.
+era_groups:
+  Run3_Early: [ Run3_2022, Run3_2022EE, Run3_2023, Run3_2023BPix ]
+
 uncs_to_exclude:
   Run3_2022: [ ]
   Run3_2022EE: [ ]
