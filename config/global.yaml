@@ -708,8 +708,9 @@ var_only_boosted: [ ]
 
 unc_to_not_consider_boosted: [ ]
 
-# Groups of eras that are plotted as their sum: HistPlotTask over the eras of a group plots
-# Plots/<group>/..., labelled by config/plot/<group>.yaml.
+# Meta-eras: `--era Run3_Early` (alone) is the sum of its eras. HistMergerTask over it sums
+# their merged histograms into Hists_merged/Run3_Early/, and HistPlotTask plots that sum,
+# labelled by config/plot/Run3_Early.yaml. A list of the eras runs them separately.
 era_groups:
   Run3_Early: [ Run3_2022, Run3_2022EE, Run3_2023, Run3_2023BPix ]
 
