@@ -1,4 +1,4 @@
-# Style overrides for the Run3_Early meta-era (Run3_2022 + Run3_2022EE + Run3_2023
+# Style overrides for the Run3_22_23 meta-era (Run3_2022 + Run3_2022EE + Run3_2023
 # + Run3_2023BPix). Lumi is the sum of the four sub-era values in this directory:
 # 7.9804 + 26.6717 + 18.063 + 9.693 = 62.4081 fb^-1.
 lumi_text:
