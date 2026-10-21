@@ -1,8 +1,8 @@
 # Style overrides for the Run3_22_23 meta-era (Run3_2022 + Run3_2022EE + Run3_2023
-# + Run3_2023BPix). Lumi is the sum of the four sub-era values in this directory:
-# 7.9804 + 26.6717 + 18.063 + 9.693 = 62.4081 fb^-1.
+# + Run3_2023BPix). Lumi is the sum of the luminosities the four eras are normalised to
+# (FLAF/config/<era>/global.yaml): 7.98951 + 26.67492 + 17.96422 + 9.67674 = 62.30539 fb^-1.
 lumi_text:
-  text: "62.4081 fb^{-1} (13.6 TeV)"
+  text: "62.3 fb^{-1} (13.6 TeV)"
   pos_ref: inner_right_top
   pos: [ 0, -0.03 ]
   text_size: 0.035

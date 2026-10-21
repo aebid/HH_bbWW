@@ -1,5 +1,5 @@
 lumi_text:
-  text: "18.063 fb^{-1} (13.6 TeV)"
+  text: "18.0 fb^{-1} (13.6 TeV)"
   pos_ref: inner_right_top
   pos: [ 0, -0.03 ]
   text_size: 0.035
