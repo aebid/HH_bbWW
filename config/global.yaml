@@ -545,27 +545,31 @@ signal_plot_scale: bkg
 # Control regions of the HistPlotTask plots: no signal overlay, and the data shown even for a
 # variable blinded (histograms.yaml `blind`) in the other regions.
 plot_control_regions: [ TT_CR, DY_CR ]
-# The backgrounds of the HistPlotTask plots, grouped: each entry is one stack entry, the sum of
-# its processes, stacked in this order from the bottom (color: its first process's by default).
-# A group none of whose processes is in the physics model is skipped (DY: Run3_Model,
-# DY_M_50 and DY_M_10to50: Run3_Model_DYSplit).
+# The HistPlotTask plots' processes, grouped: each entry is the sum of its processes -- one
+# stack entry for backgrounds, stacked in this order from the bottom, one curve for signals.
+# color: its first process's by default. A group none of whose processes is in the physics model
+# is skipped (DY: Run3_Model, DY_M_50 and DY_M_10to50: Run3_Model_DYSplit). A process may carry a
+# ${MASS}-like parameter: the group then makes an entry per value, its name formatted with it.
 plot_process_groups:
-  - name: "t#bar{t} + t#bar{t}V"
-    processes: [ TT, ttV ]
-  - name: "Single top"
-    processes: [ ST ]
-  - name: "DY"
-    processes: [ DY ]
-  - name: "DY m_{ll} > 50 GeV"
-    processes: [ DY_M_50 ]
-  - name: "DY m_{ll} #in [10, 50] GeV"
-    processes: [ DY_M_10to50 ]
-  - name: "W #rightarrow l#nu + Jets"
-    processes: [ W ]
-  - name: "Single Higgs"
-    processes: [ H ]
   - name: "Diboson + TriBoson"
     processes: [ VV, VVV ]
+  - name: "Single Higgs"
+    processes: [ H ]
+  - name: "W #rightarrow l#nu + Jets"
+    processes: [ W ]
+  - name: "DY m_{ll} #in [10, 50] GeV"
+    processes: [ DY_M_10to50 ]
+  - name: "DY m_{ll} > 50 GeV"
+    processes: [ DY_M_50 ]
+  - name: "DY"
+    processes: [ DY ]
+  - name: "Single top"
+    processes: [ ST ]
+  - name: "t#bar{t} + t#bar{t}V"
+    processes: [ TT, ttV ]
+  # the spin-0 (Radion) bbWW signal, its 2-lepton and 1-lepton samples together, per mass
+  - name: "gg#rightarrowX#rightarrowbbWW spin‐0 M_{X} = ${MASS} GeV"  # U+2010 hyphen: mathtext draws - as a spaced minus
+    processes: [ "GluGluToRadion_bbWW_2L_${MASS}", "GluGluToRadion_bbWW_1L_${MASS}" ]
 
 # This is for Analysis Selection
 channelSelection:

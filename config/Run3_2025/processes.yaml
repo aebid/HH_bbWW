@@ -269,7 +269,7 @@ GluGluToRadion_bbWW_2L:
       - [ '700' ]
       - [ '1000' ]
     plot_color: [ "kBlack", "kBlue", "kRed" ]
-    channels: [ "eE", "eMu", "muMu" ]
+    channels: [ "e", "mu", "eE", "eMu", "muMu" ]
   datasets: [ ]
 
 GluGluToRadion_bbWW_1L:
@@ -286,7 +286,7 @@ GluGluToRadion_bbWW_1L:
       - [ '700' ]
       - [ '1000' ]
     plot_color: [ "kMagenta", "kCyan", "kGreen" ]
-    channels: [ "e", "mu" ]
+    channels: [ "e", "mu", "eE", "eMu", "muMu" ]
   datasets: [ ]
 
 GluGluToBulkGraviton_bbWW_2L:

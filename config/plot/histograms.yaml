@@ -81,7 +81,7 @@ lep2_mass:
 
 lep1_Muon_pfRelIso04_all:
   x_bins: "50|0:0.5"
-  x_title: Muon1_Iso [GeV]
+  x_title: "Muon1_Iso"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -89,7 +89,7 @@ lep1_Muon_pfRelIso04_all:
 
 lep2_Muon_pfRelIso04_all:
   x_bins: "50|0:0.5"
-  x_title: Muon2_Iso [GeV]
+  x_title: "Muon2_Iso"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -97,7 +97,7 @@ lep2_Muon_pfRelIso04_all:
 
 lep1_Electron_pfRelIso03_all:
   x_bins: "50|0:0.5"
-  x_title: Ele1_Iso [GeV]
+  x_title: "Ele1_Iso"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -105,7 +105,7 @@ lep1_Electron_pfRelIso03_all:
 
 lep2_Electron_pfRelIso03_all:
   x_bins: "50|0:0.5"
-  x_title: Ele2_Iso [GeV]
+  x_title: "Ele2_Iso"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -500,7 +500,7 @@ met_phi:
 
 ll_mass:
   x_bins: "100|0.0:400.0"
-  x_title: diLep mass
+  x_title: "diLep mass [GeV]"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -508,7 +508,7 @@ ll_mass:
 
 ll_pt:
   x_bins: "50|20:500"
-  x_title: diLep pt
+  x_title: "diLep pt [GeV]"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -516,7 +516,7 @@ ll_pt:
 
 ll_pt_gen:
   x_bins: "50|20:500"
-  x_title: VHE Vpt
+  x_title: "VHE Vpt [GeV]"
   y_title: Events
   use_log_y: True
   max_y_sf: 1.5
@@ -543,7 +543,7 @@ bb_pt:
 
 bb_mass:
   x_bins: "50|0:500"
-  x_title: m(bb)
+  x_title: "m(bb) [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -559,7 +559,7 @@ bb_mass_PNetRegPtRawCorr:
 
 bb_mass_PNetRegPtRawCorr_PNetRegPtRawCorrNeutrino:
   x_bins: "100|0:300"
-  x_title: m(bb)_RawCorr_RawCorrNeutrino
+  x_title: "m(bb)_RawCorr_RawCorrNeutrino [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -705,7 +705,7 @@ mT_fix:
 
 MT:
   x_bins: "25|0:200"
-  x_title: MT
+  x_title: "MT [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -713,7 +713,7 @@ MT:
 
 total_MT:
   x_bins: "100|0:200"
-  x_title: MT total
+  x_title: "MT total [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -729,7 +729,7 @@ ll_met_MT_WithMass:
 
 lep1_MT:
   x_bins: "100|0:200"
-  x_title: MT lep1
+  x_title: "MT lep1 [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -737,7 +737,7 @@ lep1_MT:
 
 lep2_MT:
   x_bins: "100|0:200"
-  x_title: MT lep2
+  x_title: "MT lep2 [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -753,7 +753,7 @@ MT2:
 
 MT2_ll:
   x_bins: "100|0:500"
-  x_title: MT2 ll
+  x_title: "MT2 ll [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -761,7 +761,7 @@ MT2_ll:
 
 MT2_bb:
   x_bins: "100|0:500"
-  x_title: MT2 bb
+  x_title: "MT2 bb [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -769,7 +769,7 @@ MT2_bb:
 
 MT2_blbl1:
   x_bins: "50|0:500"
-  x_title: MT2 blbl1
+  x_title: "MT2 blbl1 [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -777,7 +777,7 @@ MT2_blbl1:
 
 MT2_blbl2:
   x_bins: "50|0:500"
-  x_title: MT2 blbl2
+  x_title: "MT2 blbl2 [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -785,7 +785,7 @@ MT2_blbl2:
 
 MT2_blbl_min:
   x_bins: "100|0:500"
-  x_title: MT2 blbl minimum
+  x_title: "MT2 blbl minimum [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -793,7 +793,7 @@ MT2_blbl_min:
 
 MT2_blbl_max:
   x_bins: "100|0:500"
-  x_title: MT2 blbl maximum
+  x_title: "MT2 blbl maximum [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -801,7 +801,7 @@ MT2_blbl_max:
 
 MT2_blbl_dR:
   x_bins: "100|0:500"
-  x_title: MT2 blbl (min dR pairing)
+  x_title: "MT2 blbl (min dR pairing) [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -1106,7 +1106,7 @@ DoubleLepHME_mass:
 DeepHME_mass:
   # 78 bins: 10 GeV to 700, 25 to 1000, 50 to 1500, 100 to 2000 (bin width <= ~1/3 of the HME resolution)
   x_bins: [ 0, 200, 210, 220, 230, 240, 250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350, 360, 370, 380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510, 520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650, 660, 670, 680, 690, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975, 1000, 1050, 1100, 1150, 1200, 1250, 1300, 1350, 1400, 1450, 1500, 1600, 1700, 1800, 1900, 2000 ]
-  x_title: "Deep HME Mass"
+  x_title: "Deep HME Mass [GeV]"
   y_title: "Events"
   use_log_y: False
   max_y_sf: 1.5
@@ -1115,7 +1115,7 @@ DeepHME_mass:
 
 DeepHME_mass_error:
   x_bins: "100|0:1000"
-  x_title: "Single Lepton Deep HME Mass Error"
+  x_title: "Single Lepton Deep HME Mass Error [GeV]"
   y_title: "Events"
   use_log_y: False
   max_y_sf: 1.5
@@ -3617,7 +3617,7 @@ TwoStageDNN_M1000_VV:
 
 Pzeta:
   x_bins: "50|-200:300"
-  x_title: "P_{#zeta}"
+  x_title: "P_{#zeta} [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
@@ -3625,7 +3625,7 @@ Pzeta:
 
 Pzeta_visible:
   x_bins: "40|0:400"
-  x_title: "P_{#zeta}^{vis}"
+  x_title: "P_{#zeta}^{vis} [GeV]"
   y_title: Events
   use_log_y: False
   max_y_sf: 1.5
