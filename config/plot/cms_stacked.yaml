@@ -29,6 +29,12 @@ page_setup:
   allowed_ratio_margin: 0.5
   ratio_pad_size: 0.25
   ratio_pad_spacing: 0.04
+  # log y: this fraction of the axis height stays free above the highest bin, for the legend
+  log_y_headroom: 0.45
+  # linear y: the same, instead of the per-variable max_y_sf
+  y_headroom: 0.4
+  # the CMS / scope / lumi line, small enough for "Simulation Preliminary" beside the lumi
+  cms_label_fontsize: 20
   text_boxes:
     - cms_text
     - scope_text
@@ -38,6 +44,12 @@ page_setup:
     - cat_text
     - ch_text
     - customreg_text
+  # The labels top left, a line per entry: the channel and the category share one. Each line
+  # takes the text_size and font (62: bold) of its first box.
+  label_lines:
+    - [ ana_text ]
+    - [ ch_text, cat_text ]
+    - [ customreg_text ]
   legend: legend
 
 legend:
@@ -47,14 +59,15 @@ legend:
   fill_color: kWhite
   fill_style: 0
   border_size: 0
-  text_size: 0.012
+  text_size: 0.017
   font: 42
+  n_columns: 2
 
 ana_text:
   text: "hh#rightarrowbbWW"
   pos_ref: inner_left_top
   pos: [ 0.1, -0.02 ]
-  text_size: 0.02
+  text_size: 0.03
   font: 62
   align: left_bottom
 
@@ -66,7 +79,7 @@ cms_text:
   font: 61
 
 scope_text:
-  text: "Private work"
+  text: "Preliminary"
   pos_ref: cms_text
   pos: [ 0.05, -0.08 ]
   text_size: 0.04
@@ -81,19 +94,19 @@ datasim_text:
 cat_text:
   pos_ref: datasim_text
   pos: [ 0.1, -0.08 ]
-  text_size: 0.026
+  text_size: 0.03
   font: 62
 
 ch_text:
   pos_ref: datasim_text
   pos: [ 0.01, -0.08 ]
-  text_size: 0.026
+  text_size: 0.03
   font: 62
 
 customreg_text:
   pos_ref: datasim_text
   pos: [ 0.24, -0.08 ]
-  text_size: 0.020
+  text_size: 0.03
   font: 62
 
 bkg_hist:
@@ -129,6 +142,10 @@ sgn_hist:
   line_width: 3
   legend_style: F
   draw_opt: HIST
+  # true adds each signal's yield to its legend entry (internal studies)
+  show_yield: false
+  # with signal_plot_scale: bkg, said once in the legend instead of on every signal
+  norm_legend_note: "Signals normalised to the total background"
 
 data_hist:
   fill_style: 0

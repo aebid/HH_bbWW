@@ -9,14 +9,6 @@ lumi_text:
   font: 42
   align: right_bottom
 
-# Blank so the CMS label reads just "CMS Simulation" -- with the 4-era lumi string
-# on the same line there is no room for the default "Private work" scope as well.
-scope_text:
-  text: ""
-  pos_ref: cms_text
-  pos: [ 0.05, -0.08 ]
-  text_size: 0.04
-
 channel_text:
   'e': 'e'
   'mu': '#mu'

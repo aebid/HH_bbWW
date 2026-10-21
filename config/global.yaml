@@ -542,6 +542,30 @@ custom_subcategories: [ ]
 # Signal overlay scaling in HistPlotTask: a fixed factor (e.g. 100), or "bkg" to
 # normalise each signal's integral to the summed background (shape comparison).
 signal_plot_scale: bkg
+# Control regions of the HistPlotTask plots: no signal overlay, and the data shown even for a
+# variable blinded (histograms.yaml `blind`) in the other regions.
+plot_control_regions: [ TT_CR, DY_CR ]
+# The backgrounds of the HistPlotTask plots, grouped: each entry is one stack entry, the sum of
+# its processes, stacked in this order from the bottom (color: its first process's by default).
+# A group none of whose processes is in the physics model is skipped (DY: Run3_Model,
+# DY_M_50 and DY_M_10to50: Run3_Model_DYSplit).
+plot_process_groups:
+  - name: "t#bar{t} + t#bar{t}V"
+    processes: [ TT, ttV ]
+  - name: "Single top"
+    processes: [ ST ]
+  - name: "DY"
+    processes: [ DY ]
+  - name: "DY m_{ll} > 50 GeV"
+    processes: [ DY_M_50 ]
+  - name: "DY m_{ll} #in [10, 50] GeV"
+    processes: [ DY_M_10to50 ]
+  - name: "W #rightarrow l#nu + Jets"
+    processes: [ W ]
+  - name: "Single Higgs"
+    processes: [ H ]
+  - name: "Diboson + TriBoson"
+    processes: [ VV, VVV ]
 
 # This is for Analysis Selection
 channelSelection:
