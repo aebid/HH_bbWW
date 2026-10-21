@@ -23,7 +23,7 @@ DYto2L_InclusivePlusBinned:
 
 DY_M_10to50:
   name: "DY M10to50"
-  color: "kAzure+10"
+  color: "kAzure-9"
   datasets:
     - DYto2E_M_10to50_amcatnloFXFX
     - DYto2Mu_M_10to50_amcatnloFXFX

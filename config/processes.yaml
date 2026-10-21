@@ -31,3 +31,11 @@
     dependency_level:
       AnaTuple: file
       AnaTupleMerge: process
+
+# DY above 50 GeV on its own, for Run3_Model_DYSplit: beside DY_M_10to50 it is the DY of
+# Run3_Model split by mass. Every era defines DYto2L_InclusivePlusBinned.
+DY_M_50:
+  name: "DY M50"
+  color: "kAzure+7"
+  sub_processes:
+    - DYto2L_InclusivePlusBinned

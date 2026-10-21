@@ -19,15 +19,34 @@ Run3_Model:
     - W
     - H
     # - QCD_PT
-  signals:
+  signals: &Run3_Model_signals
     - GluGluToRadion_bbWW_1L
     - GluGluToRadion_bbWW_2L
     - GluGluToBulkGraviton_bbWW_1L
     - GluGluToBulkGraviton_bbWW_2L
     - GluGluToRadion_bbTauTau
     - GluGluToBulkGraviton_bbTauTau
-  data:
+  data: &Run3_Model_data
     - Data_Full
+
+# Run3_Model with DY split by mass for DY studies: DY_M_10to50 and DY_M_50 (the stitched M>50
+# inclusive and binned samples) are merged and plotted as two backgrounds instead of one DY.
+# The datacards keep Run3_Model's DY. Select it with `phys_model: Run3_Model_DYSplit` in a user_custom
+# file (--user-custom), under a --version of its own.
+Run3_Model_DYSplit:
+  name: "Run 3 model, DY split by mass"
+  backgrounds:
+    - TT
+    - DY_M_10to50
+    - DY_M_50
+    - ST
+    - VV
+    - VVV
+    - ttV
+    - W
+    - H
+  signals: *Run3_Model_signals
+  data: *Run3_Model_data
 
 OnlyData:
   name: "Only Data"
