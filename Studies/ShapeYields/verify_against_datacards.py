@@ -27,13 +27,13 @@ Usage:
 
 import argparse
 import csv
+import os
 import re
 import sys
 from collections import defaultdict
 
 import numpy as np
 import uproot
-import yaml
 
 
 def merged_templates(cfg):
@@ -83,8 +83,13 @@ def main():
     )
     args = p.parse_args()
 
-    with open(args.config) as f:
-        cfg = yaml.safe_load(f)
+    # the datacard configuration as StatInference reads it (extends, variables)
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from StatInference.common.card_config import load_card_config
+
+    cfg = load_card_config(args.config)
     merged = merged_templates(cfg)
     signals = signal_names(cfg)
     masses = args.mass or next(

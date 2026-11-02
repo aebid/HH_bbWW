@@ -1,3 +1,12 @@
+# HH->bbWW DL resonant datacards. This card is spin-0 (radion); x_hh_bbww_DL_run3_spin2.yaml
+# extends it and sets only the variables below, so both spins share everything else.
+# ${NAME} of a variable is replaced in every string of the card when it is read (StatInference
+# common/card_config.py); ${MX} and ${ERA} are filled later by StatInference itself.
+variables:
+  SIGNAL_MODEL: GluGluToRadion # signal process names: <SIGNAL_MODEL>_bbWW_2L_<MX>, ..._bbTauTau_<MX>
+  SPIN: 0 # in the limit plot names, labels and the Run 2 reference file
+  SPIN_NAME: radion # in the limit plot labels
+
 analysis: hh_bbww
 type: resonant
 model:
@@ -90,20 +99,20 @@ processes:
     is_data: true
     is_asimov_data: true
 
-  # The spin-0 (Radion) X->HH signal. Run3_Model histograms every hypothesis; this card picks one.
-  # A spin-2 card is this file with GluGluToBulkGraviton_bbWW_2L and GluGluToBulkGraviton_bbTauTau
-  # in place of GluGluToRadion_bbWW_2L and GluGluToRadion_bbTauTau (process names and the
-  # uncertainty patterns below), and wants its own binning.
-  - process: GluGluToRadion_bbWW_2L_${MX}
-    hist_name: GluGluToRadion_bbWW_2L_${MX}
+  # The X->HH signal of the card's SIGNAL_MODEL (GluGluToRadion for spin-0, GluGluToBulkGraviton
+  # for spin-2). Run3_Model histograms every hypothesis; the variable picks one. The equal-signal
+  # binning follows this signal; the HME windows and the target numbers of bins are shared by both
+  # spins (the pDNN is spin-inclusive, and spin hardly changes the HH mass).
+  - process: ${SIGNAL_MODEL}_bbWW_2L_${MX}
+    hist_name: ${SIGNAL_MODEL}_bbWW_2L_${MX}
     # the produced X->HH points up to 1.5 TeV; the DNN has to be retrained over this
     # grid before these cards can be built
     param_values: [ 250, 260, 270, 280, 300, 320, 350, 360, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 1000, 1100, 1200, 1300, 1400, 1500 ]
     is_signal: true
     allow_zero_integral: true
 
-  - process: GluGluToRadion_bbTauTau_${MX}
-    hist_name: GluGluToRadion_bbTauTau_${MX}
+  - process: ${SIGNAL_MODEL}_bbTauTau_${MX}
+    hist_name: ${SIGNAL_MODEL}_bbTauTau_${MX}
     param_values: [ 250, 260, 270, 280, 300, 320, 350, 360, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 1000, 1100, 1200, 1300, 1400, 1500 ]
     is_signal: true
     allow_zero_integral: true
@@ -708,7 +717,7 @@ uncertainties:
   # which is what makes them apply everywhere. Values from
   # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
   #
-  # GluGluToRadion_bbWW_1L is the single-lepton signal and is not a process of this dilepton
+  # <SIGNAL_MODEL>_bbWW_1L is the single-lepton signal and is not a process of this dilepton
   # card; it belongs in these lists when the SL card gains them. The single-Higgs
   # background H is not in them: it mixes H->bb, WW and tautau in one histogram, and its
   # branching-ratio uncertainties (1-2 %) are small next to QCD_scale_H.
@@ -719,24 +728,24 @@ uncertainties:
   # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
   # with re.match, anything else compared literally). They have to be: by the time an
   # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
-  # so the process is GluGluToRadion_bbWW_2L_700 and a literal "GluGluToRadion_bbWW_2L_${MX}" matches
+  # so the process is GluGluToRadion_bbWW_2L_700 and a literal "<SIGNAL_MODEL>_bbWW_2L_<MX>" matches
   # nothing at all -- silently, since an uncertainty that applies to no process is simply
   # never added.
   - name: BR_hbb
     type: lnN
     processes:
-      - ^GluGluToRadion_bbWW_2L_
-      - ^GluGluToRadion_bbTauTau_
+      - ^${SIGNAL_MODEL}_bbWW_2L_
+      - ^${SIGNAL_MODEL}_bbTauTau_
     value: [ -0.0126, 0.0124 ]
   - name: BR_hww
     type: lnN
     processes:
-      - ^GluGluToRadion_bbWW_2L_
+      - ^${SIGNAL_MODEL}_bbWW_2L_
     value: [ -0.0152, 0.0153 ]
   - name: BR_htt
     type: lnN
     processes:
-      - ^GluGluToRadion_bbTauTau_
+      - ^${SIGNAL_MODEL}_bbTauTau_
     value: [ -0.0163, 0.0165 ]
 
 autolnNThr: 0.1
@@ -756,20 +765,20 @@ campaigns:
   Run3_2023: "2023preBPix"
   Run3_2023BPix: "2023postBPix"
 
-# One set per spin hypothesis, named and labelled with it: this card is spin-0 (radion), its
-# twin x_hh_bbww_DL_run3_spin2.yaml spin-2 (bulk graviton); each compares with the Run 2 DL
-# expected limit of its own spin (HIG-21-005 cards, recomputed: run2_spin*_DL_external_limits.json).
+# Named and labelled with the card's spin (SPIN, SPIN_NAME), so the spin-0 and spin-2 plots do not
+# collide; each compares with the Run 2 DL expected limit of its own spin (HIG-21-005 cards,
+# recomputed: run2_spin<SPIN>_DL_external_limits.json).
 limit_plots:
-  - name: spin0_run3_vs_run2
+  - name: spin${SPIN}_run3_vs_run2
     # Draw 1/2 sigma bands
     bands: true
     datacards:
-      - { name: "Early Run 3 spin-0 (radion)", glob: "*.txt" }
+      - { name: "Early Run 3 spin-${SPIN} (${SPIN_NAME})", glob: "*.txt" }
     lumi_projections:
-      - name: "Early Run 3 spin-0 scaled to 138 fb^{-1}"
+      - name: "Early Run 3 spin-${SPIN} scaled to 138 fb^{-1}"
         lumi_target: 138
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
     plot_params: &limit_plot_style
       xsec: pb
       y_log: true
@@ -778,26 +787,26 @@ limit_plots:
       y_min: 0.001
       y_max: 100
 
-  - name: spin0_channels
+  - name: spin${SPIN}_channels
     datacards:
-      - { name: "Combined spin-0 (radion)", glob: "*.txt" }
+      - { name: "Combined spin-${SPIN} (${SPIN_NAME})", glob: "*.txt" }
       - { name: "ee", glob: "${ERA}/eE/*.txt" }
       - { name: "e#mu", glob: "${ERA}/eMu/*.txt" }
       - { name: "#mu#mu", glob: "${ERA}/muMu/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
     plot_params: *limit_plot_style
 
-  - name: spin0_categories
+  - name: spin${SPIN}_categories
     datacards:
-      - { name: "Combined spin-0 (radion)", glob: "*.txt" }
+      - { name: "Combined spin-${SPIN} (${SPIN_NAME})", glob: "*.txt" }
       # each jet category with its own control regions (SR_res2b + TT_res2b + DY_res2b: dhi
       # combines the cards of one mass), which fix the rateParams the SR shares
       - { name: "res 2b", glob: "${ERA}/categories/*_res2b/*.txt" }
       - { name: "recovery", glob: "${ERA}/categories/*_recovery/*.txt" }
       - { name: "boosted", glob: "${ERA}/categories/*_boosted/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
     plot_params: *limit_plot_style
 
 # Nuisance pulls and impacts, drawn by PlotPullsAndImpactsTask into

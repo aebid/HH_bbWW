@@ -70,6 +70,16 @@ def load_config(path):
         return yaml.safe_load(f)
 
 
+def load_card(path):
+    """The datacard configuration as StatInference reads it (extends, variables)."""
+    sys.path.insert(
+        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    )
+    from StatInference.common.card_config import load_card_config
+
+    return load_card_config(path)
+
+
 class CategoryNaming:
     """Take a sliced category name apart with the pattern that put it together.
 
@@ -747,7 +757,7 @@ def main():
     )
     args = p.parse_args()
 
-    cfg = load_config(args.config)
+    cfg = load_card(args.config)
     param_name = cfg["model"]["parameters"][0]
 
     group = args.era_group

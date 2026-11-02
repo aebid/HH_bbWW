@@ -22,6 +22,7 @@ import argparse
 import json
 import multiprocessing
 import os
+import sys
 from concurrent.futures import ProcessPoolExecutor
 from string import Template
 
@@ -35,6 +36,9 @@ from DYTemplate import fit_template, lowmass_boost_shape, tail_template
 ROOT.gROOT.SetBatch(True)
 # config/... paths are relative to the analysis area this script belongs to
 ANALYSIS_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# the datacard configuration is read as StatInference reads it (extends, variables)
+sys.path.insert(0, ANALYSIS_PATH)
+from StatInference.common.card_config import load_card_config  # noqa: E402
 
 
 def analysis_file(path):
@@ -99,7 +103,7 @@ class Card:
     """What the binning needs from the datacard configuration."""
 
     def __init__(self, path, era):
-        cfg = yaml.safe_load(open(path))
+        cfg = load_card_config(path)
         self.eras = cfg.get("era_groups", {}).get(era, [era])
         self.channels = cfg["channels"]
         mapping = cfg.get("input_categories") or {}
