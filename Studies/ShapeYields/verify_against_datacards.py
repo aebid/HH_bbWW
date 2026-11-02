@@ -72,6 +72,11 @@ def main():
     p.add_argument("--csv", required=True)
     p.add_argument("--datacards", required=True, help="Datacards/<era> directory.")
     p.add_argument("--config", required=True)
+    p.add_argument(
+        "--spin",
+        default=None,
+        help="The spin of a configuration with `spins:` (default: its first).",
+    )
     p.add_argument("--era", required=True)
     p.add_argument("--mass", action="append", type=int, default=None)
     p.add_argument(
@@ -83,13 +88,16 @@ def main():
     )
     args = p.parse_args()
 
-    # the datacard configuration as StatInference reads it (extends, variables)
+    # the datacard configuration as StatInference reads it: the card of a spin
     sys.path.insert(
         0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     )
-    from StatInference.common.card_config import load_card_config
+    from StatInference.common.card_config import card_spins, load_card_config
 
-    cfg = load_card_config(args.config)
+    spin = args.spin
+    if spin is None:
+        spin = card_spins(load_card_config(args.config), args.config)[0]
+    cfg = load_card_config(args.config, spin)
     merged = merged_templates(cfg)
     signals = signal_names(cfg)
     masses = args.mass or next(

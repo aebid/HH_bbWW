@@ -1,11 +1,15 @@
-# HH->bbWW DL resonant datacards. This card is spin-0 (radion); x_hh_bbww_DL_run3_spin2.yaml
-# extends it and sets only the variables below, so both spins share everything else.
-# ${NAME} of a variable is replaced in every string of the card when it is read (StatInference
-# common/card_config.py); ${MX} and ${ERA} are filled later by StatInference itself.
-variables:
-  SIGNAL_MODEL: GluGluToRadion # signal process names: <SIGNAL_MODEL>_bbWW_2L_<MX>, ..._bbTauTau_<MX>
-  SPIN: 0 # in the limit plot names, labels and the Run 2 reference file
-  SPIN_NAME: radion # in the limit plot labels
+# HH->bbWW DL resonant datacards, for both spin hypotheses. The chain builds one card per era
+# and spin: everything below is shared, and a spin only names what differs. In every string,
+# ${NAME} is replaced by the spin's value (and ${SPIN} by the spin itself) when the card of a
+# spin is read (StatInference common/card_config.py); ${MX} and ${ERA} are filled later by
+# StatInference itself. Each spin has its own preprocessing (the equal-signal binning follows
+# its signal), datacards, limits and plots, under spin<SPIN>/ in the outputs.
+spins:
+  # signal process names <SIGNAL_MODEL>_bbWW_2L_<MX> and <SIGNAL_MODEL>_bbTauTau_<MX>; the
+  # limit plots are named spin<SPIN>_..., labelled with SPIN_NAME and compared with
+  # run2_spin<SPIN>_DL_external_limits.json
+  0: { SIGNAL_MODEL: GluGluToRadion, SPIN_NAME: radion }
+  2: { SIGNAL_MODEL: GluGluToBulkGraviton, SPIN_NAME: graviton }
 
 analysis: hh_bbww
 type: resonant
@@ -99,8 +103,8 @@ processes:
     is_data: true
     is_asimov_data: true
 
-  # The X->HH signal of the card's SIGNAL_MODEL (GluGluToRadion for spin-0, GluGluToBulkGraviton
-  # for spin-2). Run3_Model histograms every hypothesis; the variable picks one. The equal-signal
+  # The X->HH signal of the spin's SIGNAL_MODEL (GluGluToRadion for spin-0, GluGluToBulkGraviton
+  # for spin-2). Run3_Model histograms every hypothesis; the spin picks one. The equal-signal
   # binning follows this signal; the HME windows and the target numbers of bins are shared by both
   # spins (the pDNN is spin-inclusive, and spin hardly changes the HH mass).
   - process: ${SIGNAL_MODEL}_bbWW_2L_${MX}
@@ -765,7 +769,7 @@ campaigns:
   Run3_2023: "2023preBPix"
   Run3_2023BPix: "2023postBPix"
 
-# Named and labelled with the card's spin (SPIN, SPIN_NAME), so the spin-0 and spin-2 plots do not
+# Named and labelled with the spin (SPIN, SPIN_NAME), so the spin-0 and spin-2 plots do not
 # collide; each compares with the Run 2 DL expected limit of its own spin (HIG-21-005 cards,
 # recomputed: run2_spin<SPIN>_DL_external_limits.json).
 limit_plots:
