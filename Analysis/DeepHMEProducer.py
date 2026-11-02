@@ -1,5 +1,6 @@
 import numpy as np
 import Analysis.hh_bbww as analysis
+import FLAF.Common.OnnxSession as OnnxSession
 import FLAF.Common.Utilities as Utilities
 import awkward as ak
 import os
@@ -42,6 +43,7 @@ class DeepHMEProducer:
                 model_name=cfg["model_name"],
                 channel=channel,
                 return_errors=self.cfg["return_errors"],
+                session_options=OnnxSession.session_options(),
             )
 
         load_features.update(["FullEventId", "event", "SL", "DL"])

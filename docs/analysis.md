@@ -30,6 +30,11 @@ The HH mass is reconstructed with **DeepHME** (the bb̄WW counterpart to SVfit i
 of the observable computation and requires no special command — it runs as part of the standard
 producer chain.
 
+DeepHME and the DNN producers run their ONNX models with one thread per session
+(`FLAF.Common.OnnxSession`), so their outputs do not depend on the core count of the batch node.
+They still differ in the last digits between `x86_64-v3` and `x86_64-v4` nodes: compare them with a
+tolerance ([NN outputs and the CPU of the node](https://cms-flaf.github.io/FLAF/concepts/environment/#nn-outputs-and-the-cpu-of-the-node)).
+
 ## Stored gen-level t̄t information
 
 Processes with `genInfo: [ TT ]` store, next to the usual observables:
@@ -137,10 +142,11 @@ FLAF's, described in its [HistPlotTask reference](https://cms-flaf.github.io/FLA
 - **Labels:** "CMS Preliminary" ("CMS Simulation Preliminary" where the data are blinded); the
   luminosity of each era is the one the simulation is normalised to; axis titles carry their
   units.
-- **Tests:** `test/test_plot_config.py` (CI: Test Plot Config) checks, with FLAF's own plot rules,
-  in every era, the Run3_22_23 meta-era and both DY models: the control regions (exactly TT_CR
-  and DY_CR) with the data they show, the signal normalisation, the grouping and stack order of
-  the backgrounds, and the X→HH entries. It does not render the plots.
+- **Tests:** `test/test_plot_config.py` (CI: Unit Tests, through FLAF's reusable workflow) checks,
+  with FLAF's own plot rules, in every era, the Run3_22_23 meta-era and both DY models: the
+  control regions (exactly TT_CR and DY_CR) with the data they show, the signal normalisation,
+  the grouping and stack order of the backgrounds, and the X→HH entries. It does not render the
+  plots.
 
 ## Statistical interpretation
 

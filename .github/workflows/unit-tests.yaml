@@ -1,0 +1,15 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+# Every test/**/test_*.py, against the pinned FLAF; see FLAF's docs/ci/github-actions.md.
+jobs:
+  unit-tests:
+    uses: cms-flaf/FLAF/.github/workflows/unit-tests.yaml@main

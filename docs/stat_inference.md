@@ -149,8 +149,7 @@ expressions therefore read `(boosted ? 1.0f : weight_bTagShape_<src>{scale}_rel)
 final_weight`, so a boosted event's varied weight equals its nominal weight and
 `DatacardMaker`'s `canIgnore` threshold drops the nuisance from boosted categories on its
 own. Do not reach for `unc_to_not_consider_boosted` for this — that mechanism is commented
-out in `FLAF/Analysis/HistMergerFromHists.py` and is live only in the offline
-`ShapeOrLogNormal.py`.
+out in `FLAF/Analysis/HistMergerFromHists.py`, so no code reads the key.
 
 *The four `*stats*` sources are decorrelated per era, the other four are not.* That
 follows the BTV prescription: `LF`, `HF` and the two `cferr` sources describe a common

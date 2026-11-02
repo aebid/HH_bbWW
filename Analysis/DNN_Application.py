@@ -11,6 +11,7 @@ import psutil
 import yaml
 import os
 import ROOT
+import FLAF.Common.OnnxSession as OnnxSession
 import FLAF.Common.Utilities as Utilities
 import Analysis.hh_bbww as analysis
 from contextlib import contextmanager
@@ -353,7 +354,7 @@ class DNNProducer:
 
             sessions = []
             for p_idx, path in enumerate(model_paths):
-                sess = ort.InferenceSession(path, providers=["CPUExecutionProvider"])
+                sess = OnnxSession.make_session(path)
                 sessions.append((p_idx, sess))
 
             for mass in self.target_masses:
@@ -504,11 +505,9 @@ def make_session(path):
     """
     Helper function to create onnx sessions with options
     """
-    so = ort.SessionOptions()
+    so = OnnxSession.session_options()
     so.enable_cpu_mem_arena = False
     so.enable_mem_pattern = False
-    so.intra_op_num_threads = 1
-    so.inter_op_num_threads = 1
     return ort.InferenceSession(
         path, sess_options=so, providers=["CPUExecutionProvider"]
     )

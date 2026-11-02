@@ -21,6 +21,7 @@ plots must show:
 ROOT is not needed. Run: python3 test/test_plot_config.py
 """
 
+import importlib.util
 import os
 import sys
 import tempfile
@@ -31,7 +32,11 @@ from unittest import mock
 ana_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ana_path)
 os.environ.setdefault("ANALYSIS_PATH", ana_path)
-sys.modules["ROOT"] = mock.MagicMock()
+# FLAF imports ROOT and nothing tested here uses it, so where ROOT is missing a stand-in serves
+# the import only and is withdrawn again: test modules share one process (FLAF test/conftest.py).
+_root_stand_in = None
+if "ROOT" not in sys.modules and importlib.util.find_spec("ROOT") is None:
+    _root_stand_in = sys.modules["ROOT"] = mock.MagicMock()
 
 from FLAF.Common.PlotGroups import (  # noqa: E402
     GroupProcesses,
@@ -41,6 +46,9 @@ from FLAF.Common.PlotGroups import (  # noqa: E402
     want_signals,
 )
 from FLAF.Common.Setup import Setup, meta_eras  # noqa: E402
+
+if _root_stand_in is not None and sys.modules.get("ROOT") is _root_stand_in:
+    del sys.modules["ROOT"]
 
 ERAS = [
     "Run3_2022",

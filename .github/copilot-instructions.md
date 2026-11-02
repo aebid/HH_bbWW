@@ -90,6 +90,13 @@ adding one here needs that updated in step.
   which is how the 2024–2026 configs lost `pdf`, `qcd_scale` and `top_pt`. The merge is one
   level deep, so an overridden entry must be complete.
 
+### ONNX sessions
+
+- DeepHME and the DNN producers get their ONNX Runtime sessions, or their session options, from
+  `FLAF.Common.OnnxSession` (one thread; DeepHME through its `session_options` argument). A bare
+  `ort.InferenceSession` with the default options makes the outputs depend on the core count of
+  the batch node (cms-flaf/FLAF#357).
+
 ### Cost
 
 `AnalysisCacheTask` (BtagShape) runs before `HistTupleProducerTask` even for simple variables and
@@ -137,12 +144,12 @@ Verified 2026-10-23; re-check before relying on any of it.
 
 | | |
 |---|---|
-| Layout | `AnaProd/` (`anaTupleDef.py`, `baseline.py`), `Analysis/` (`hh_bbww.py`, `histTupleDef.py`, `hh_bbWW_AnaCacheProducer.py`, DeepHME/DNN producers), `Studies/`, `config/`, `include/`, `docs/`, `test/` |
+| Layout | `AnaProd/` (`anaTupleDef.py`, `baseline.py`), `Analysis/` (`hh_bbww.py`, `histTupleDef.py`, DeepHME/DNN producers), `Studies/`, `config/`, `include/`, `docs/`, `test/` |
 | Submodules | `FLAF`, `Corrections`, `StatInference`, `inference`, `DeepHME`, `SyncTool` |
 | Eras | Run 3: 2022, 2022EE, 2023, 2023BPix, 2024, 2025, 2026 |
 | Configs | `config/global.yaml`, `config/processes.yaml` (processor anchors), `config/phys_models.yaml`, `config/<era>/{datasets,processes}.yaml`, `config/Datacards/` (`x_hh_bbww_{DL,SL}_run3.yaml`, CI: `CI_card.yaml`, `CI_card_SL.yaml`) |
 | Large files | DNN `.onnx` payloads are tracked with Git LFS; never commit a binary directly |
-| Tests | `test/test_plot_config.py`: the control-plot configuration, checked through FLAF's plot rules (`FLAF/Common/PlotGroups.py`) in every era, the Run3_22_23 meta-era and both DY models, without ROOT. Otherwise validation is the integration test and physics checks; the framework's suites live in `FLAF/test/` |
-| Workflows | `formatting-check`, `repo-sanity-checks` (FLAF's sanity checks and FLAF's `run_tools/check_era_rename.py` for leftovers of the `period` → `era` rename), `test-setup-loading`, `test-era-dimension` (FLAF's `test/test_era_dimension.py` over the seven Run 3 eras: every stage built over all eras at once and taken through what the scheduler does before anything runs, and the settings that must agree between eras), `test-plot-config` (`test/test_plot_config.py` with the pinned FLAF), `deploy-docs`, `trigger-flaf-integration`. Formatting, era loading, the multi-era construction and the control-plot configuration are checked automatically — do not comment on them |
+| Tests | `test/test_plot_config.py`: the control-plot configuration, checked through FLAF's plot rules (`FLAF/Common/PlotGroups.py`) in every era, the Run3_22_23 meta-era and both DY models, without ROOT. A `test/test_*.py` added here runs in `unit-tests` without a workflow change (FLAF's reusable workflow, against the pinned FLAF); a test that needs ROOT, CVMFS or a grid proxy carries the `needs_root`/`needs_cvmfs`/`needs_proxy` marker, and a ROOT stand-in is withdrawn after the import it serves (FLAF's `docs/contributing.md`, Unit tests). Otherwise validation is the integration test and physics checks; the framework's suites live in `FLAF/test/` |
+| Workflows | `formatting-check`, `unit-tests` (FLAF's, over `test/` with the pinned FLAF, `test/test_plot_config.py` included), `repo-sanity-checks` (FLAF's sanity checks and FLAF's `run_tools/check_era_rename.py` for leftovers of the `period` → `era` rename), `test-setup-loading`, `test-era-dimension` (FLAF's `test/test_era_dimension.py` over the seven Run 3 eras: every stage built over all eras at once and taken through what the scheduler does before anything runs, and the settings that must agree between eras), `deploy-docs`, `trigger-flaf-integration`. Formatting, era loading, the multi-era construction and the control-plot configuration are checked automatically — do not comment on them |
 | Integration test | Triggered by `@cms-flaf-bot please test`; its configuration lives in `cms-flaf/FLAF_ci`, **not** in this repo. There is no `.github/integration_cfg.yaml` here |
 | Docs | `docs/`, plus the shared framework docs in `FLAF/docs/` |

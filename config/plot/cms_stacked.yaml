@@ -157,4 +157,3 @@ data_hist:
   marker_color: kBlack
   legend_style: PLE
   draw_opt: "0pe"
-  blind: true
