@@ -7,7 +7,7 @@
 spins:
   # signal process names <SIGNAL_MODEL>_bbWW_2L_<MX> and <SIGNAL_MODEL>_bbTauTau_<MX>; the
   # limit plots are named spin<SPIN>_..., labelled with SPIN_NAME and compared with
-  # run2_spin<SPIN>_DL_external_limits.json
+  # the DL/spin<SPIN> curve of run2_external_limits.json
   0: { SIGNAL_MODEL: GluGluToRadion, SPIN_NAME: radion }
   2: { SIGNAL_MODEL: GluGluToBulkGraviton, SPIN_NAME: graviton }
 
@@ -771,7 +771,8 @@ campaigns:
 
 # Named and labelled with the spin (SPIN, SPIN_NAME), so the spin-0 and spin-2 plots do not
 # collide; each compares with the Run 2 DL expected limit of its own spin (HIG-21-005 cards,
-# recomputed: run2_spin<SPIN>_DL_external_limits.json).
+# recomputed). run2_external_limits.json holds every Run 2 reference, by channel and spin
+# (DL/spin0, DL/spin2; SL/... once available); `key` picks this plot's curve.
 limit_plots:
   - name: spin${SPIN}_run3_vs_run2
     # Draw 1/2 sigma bands
@@ -782,7 +783,7 @@ limit_plots:
       - name: "Early Run 3 spin-${SPIN} scaled to 138 fb^{-1}"
         lumi_target: 138
     external_limits:
-      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin${SPIN}" }
     plot_params: &limit_plot_style
       xsec: pb
       y_log: true
@@ -798,7 +799,7 @@ limit_plots:
       - { name: "e#mu", glob: "${ERA}/eMu/*.txt" }
       - { name: "#mu#mu", glob: "${ERA}/muMu/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin${SPIN}" }
     plot_params: *limit_plot_style
 
   - name: spin${SPIN}_categories
@@ -810,7 +811,7 @@ limit_plots:
       - { name: "recovery", glob: "${ERA}/categories/*_recovery/*.txt" }
       - { name: "boosted", glob: "${ERA}/categories/*_boosted/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin${SPIN}_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin${SPIN}" }
     plot_params: *limit_plot_style
 
 # Nuisance pulls and impacts, drawn by PlotPullsAndImpactsTask into
