@@ -54,7 +54,7 @@ channels:
 #   SR_* : m_ll < 70 GeV, the DNN score in equal-signal bins;
 #   TT_* : TT_CR, m_ll > 110 GeV, one bin;
 #   DY_* : DY_CR, |m_ll - mZ| < 10 GeV, one bin.
-# The control regions fix the TT and DY normalisations (the rateParams below). The names carry no
+# The control regions constrain the TT and DY normalisations (CMS_bbww_norm_TT/DY_*, lnN below). The names carry no
 # "/" (they become the datacard bin names, and with them the names of the per-bin MC-stat
 # nuisances, which dhi's impact merging cannot handle with a "/"); input_categories maps each to
 # its directory in the histogram files.
@@ -688,34 +688,34 @@ uncertainties:
     processes: [ DY ]
     categories: [ SR_res2b, SR_recovery ]
 
-  # Free normalisations of TT (incl. ttV) and DY (m_ll > 50 GeV), each fixed by its control
-  # region (TT_CR / DY_CR) and shared with the signal region of the same jet category, every
-  # channel and every era. Boosted has ~100 events per era in either control region, so it
-  # shares the res2b parameter.
-  - name: CMS_bbww_rate_TT_res2b
-    type: rateParam
+  # Normalisations of TT (incl. ttV) and DY (m_ll > 50 GeV): constrained priors, not free
+  # parameters. Each applies to the signal region and both control regions of its jet category,
+  # every channel and every era, so the control regions (TT_CR / DY_CR) constrain it in the fit.
+  # Boosted has ~100 events per era in either control region, so it shares the res2b one. The
+  # priors are generous (the cross-section uncertainties plus the modelling of our phase space);
+  # v2610 loose, Asimov: the control regions constrain them to TT +-4-5%, DY +-3-7%, and the
+  # expected limits equal those with free rateParams (<= 0.2%, MX 300-1300), also with priors
+  # half or twice as wide.
+  - name: CMS_bbww_norm_TT_res2b
+    type: lnN
     processes: [ TT ]
     categories: [ SR_res2b, TT_res2b, DY_res2b, SR_boosted, TT_boosted, DY_boosted ]
-    value: 1.0
-    range: [ 0.0, 5.0 ]
-  - name: CMS_bbww_rate_TT_recovery
-    type: rateParam
+    value: 0.10
+  - name: CMS_bbww_norm_TT_recovery
+    type: lnN
     processes: [ TT ]
     categories: [ SR_recovery, TT_recovery, DY_recovery ]
-    value: 1.0
-    range: [ 0.0, 5.0 ]
-  - name: CMS_bbww_rate_DY_res2b
-    type: rateParam
+    value: 0.10
+  - name: CMS_bbww_norm_DY_res2b
+    type: lnN
     processes: [ DY ]
     categories: [ SR_res2b, TT_res2b, DY_res2b, SR_boosted, TT_boosted, DY_boosted ]
-    value: 1.0
-    range: [ 0.0, 5.0 ]
-  - name: CMS_bbww_rate_DY_recovery
-    type: rateParam
+    value: 0.20
+  - name: CMS_bbww_norm_DY_recovery
+    type: lnN
     processes: [ DY ]
     categories: [ SR_recovery, TT_recovery, DY_recovery ]
-    value: 1.0
-    range: [ 0.0, 5.0 ]
+    value: 0.20
 
   # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
   # which is what makes them apply everywhere. Values from
@@ -806,7 +806,7 @@ limit_plots:
     datacards:
       - { name: "Combined spin-${SPIN} (${SPIN_NAME})", glob: "*.txt" }
       # each jet category with its own control regions (SR_res2b + TT_res2b + DY_res2b: dhi
-      # combines the cards of one mass), which fix the rateParams the SR shares
+      # combines the cards of one mass), which constrain the TT / DY normalisations the SR shares
       - { name: "res 2b", glob: "${ERA}/categories/*_res2b/*.txt" }
       - { name: "recovery", glob: "${ERA}/categories/*_recovery/*.txt" }
       - { name: "boosted", glob: "${ERA}/categories/*_boosted/*.txt" }
