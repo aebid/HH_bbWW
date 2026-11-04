@@ -158,10 +158,6 @@ corrections: &corrections_default
     processes: [ TT, custom_CI_Background_TT ]
     branch: genTop_pt
     parameterization: data_nlo
-  # PDF members and QCD (muR, muF) scale weights, stored per member as indexed shape-weight
-  # sources (Corrections/pdf.py, Corrections/qcd_scale.py). Reference for how CMS treats these
-  # theory uncertainties: "CMS theory uncertainties", Physics Days,
-  # https://indico.cern.ch/event/1685006/contributions/7200117/attachments/3339004/5983688/CMS%20theory%20uncertainties%20Physics%20Days.pdf
   pdf:
     stages: [ AnaTuple, AnaTupleMerge ]
     branch: LHEPdfWeight
