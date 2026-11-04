@@ -3,6 +3,10 @@
     module: FLAF.Processors.MCStitching
     class: MCStitcher
     config: FLAF/config/Processors/stitching_DY_amcatnlo_Vpt_NpNLO.yaml
+    # QCD-scale and PDF variations change the jet-multiplicity and pT(V) bins by different
+    # amounts (up to 16% in the 2-jet bins): normalise them once over the whole stitched DY,
+    # not bin by bin, so that change is kept (FLAF docs/concepts/stitching.md).
+    inclusiveNormalisationSources: [ qcd_scale, pdf ]
     # A stitcher writes its denominator into the anaCache at AnaTuple and has to be present
     # at AnaTupleMerge to combine it again; only these two stages are ever looked up.
     stages: [ AnaTuple, AnaTupleMerge ]
@@ -15,6 +19,7 @@
     module: FLAF.Processors.MCStitching
     class: MCStitcher
     config: FLAF/config/Processors/stitching_DY_amcatnlo_Vpt_NpNLO_allFlavors.yaml
+    inclusiveNormalisationSources: [ qcd_scale, pdf ]
     stages: [ AnaTuple, AnaTupleMerge ]
     verbose: 1
     dependency_level:
