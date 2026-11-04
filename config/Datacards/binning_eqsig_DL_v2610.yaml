@@ -43,12 +43,13 @@ n_bins:
 # up/down variation:
 #   - total background >= min_bkg, with an effective MC count (sum w)^2 / sum w^2 >= min_bkg_neff;
 #   - every background >= 0;
-#   - every background that is at least exempt_fraction of its window's total: > min_each, with
-#     N_eff >= min_each_neff, and each of its variations with N_eff >= min_variation_neff.
+#   - every background that is at least exempt_fraction of its window's total: > min_bkg x
+#     exempt_fraction (0.01: a background that is that fraction of the window has to be at least
+#     that fraction of the smallest background a bin may have), with N_eff >= min_each_neff, and
+#     each of its variations with N_eff >= min_variation_neff.
 gates:
   min_bkg: 0.2
   min_bkg_neff: 4
-  min_each: 0.01
   min_each_neff: 2
   min_variation_neff: 2
   exempt_fraction: 0.05

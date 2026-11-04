@@ -144,7 +144,16 @@ class Binning:
         self.cfg = cfg
         self.windows = yaml.safe_load(open(analysis_file(cfg["windows"])))["windows"]
         self.n_bins = cfg["n_bins"]
-        self.gates = cfg["gates"]
+        self.gates = dict(cfg["gates"])
+        # A background holding at least exempt_fraction of its window's background has to hold at
+        # least that fraction of the smallest background a bin may have: its floor is not a free
+        # number but min_bkg x exempt_fraction (0.2 x 0.05 = 0.01).
+        if "min_each" in self.gates:
+            raise ValueError(
+                "gates: min_each is no longer configurable; the per-background floor is "
+                "min_bkg x exempt_fraction. Remove it from the binning configuration."
+            )
+        self.gates["min_each"] = self.gates["min_bkg"] * self.gates["exempt_fraction"]
         self.members = {
             b: cfg.get("backgrounds", {}).get(b, [b]) for b in card.backgrounds
         }
