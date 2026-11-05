@@ -708,6 +708,36 @@ uncertainties:
     categories: [ SR_recovery, TT_recovery, DY_recovery ]
     value: 0.20
 
+  # DNN-shape uncertainties of the binned control regions (binning_eqsig_DL_v2610.yaml:
+  # control_region_shapes): a tilt of the region's main process along the DNN score, +-4% (DY in
+  # DY_CR) and +-2% (TT in TT_CR) at the ends, the observed data / MC slope at 1 sigma; one per jet
+  # category, every channel and era. They absorb the control regions' shape mis-modelling, so it
+  # does not pull the shape nuisances shared with the SR.
+  - name: CMS_bbww_dycr_shape_res2b
+    type: shape
+    processes: [ DY ]
+    categories: [ DY_res2b ]
+  - name: CMS_bbww_ttcr_shape_res2b
+    type: shape
+    processes: [ TT ]
+    categories: [ TT_res2b ]
+  - name: CMS_bbww_dycr_shape_recovery
+    type: shape
+    processes: [ DY ]
+    categories: [ DY_recovery ]
+  - name: CMS_bbww_ttcr_shape_recovery
+    type: shape
+    processes: [ TT ]
+    categories: [ TT_recovery ]
+  - name: CMS_bbww_dycr_shape_boosted
+    type: shape
+    processes: [ DY ]
+    categories: [ DY_boosted ]
+  - name: CMS_bbww_ttcr_shape_boosted
+    type: shape
+    processes: [ TT ]
+    categories: [ TT_boosted ]
+
   # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
   # which is what makes them apply everywhere. Values from
   # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties

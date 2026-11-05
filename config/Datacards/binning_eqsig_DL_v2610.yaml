@@ -70,9 +70,26 @@ backgrounds:
   ST: [ ST ]
   Minor: [ VV, VVV, H, W ]
 
-# Control regions: one bin over the category's HME window. They are pure enough to fix the
-# normalisations (TT_CR res2b ~90% TT, DY_CR recovery ~96% DY) and carry no signal to bin by.
-single_bin_regions: [ TT_CR, DY_CR ]
+# Control regions (TT_CR res2b ~90% TT, DY_CR recovery ~96% DY; no signal): the category's HME
+# window in this many bins of equal total background along the DNN score, from the top down, with
+# the same gates. Binned, they constrain the shape nuisances the SR shares (b-tag HF, JES, parton
+# shower), not only the normalisations: v2610 loose, full combined card, expected limit vs one-bin
+# CRs -4% (MX 250), -13% (350), -10% (400), -6% (450). A per-mass optimisation of the SR and CR
+# binning (study) gained no more at low mass (MX 300 -13%, 600 -4%) and <= 1.5% from MX 800 up.
+control_region_bins:
+  TT_CR: 5
+  DY_CR: 5
+
+# The binned control regions' data / MC slope along the DNN score (v2610 loose, MX 300, 5 equal-MC
+# bins: TT_CR res2b 1.005 -> 0.980, recovery 1.008 -> 0.970; DY_CR res2b 1.025 -> 0.955, recovery
+# 1.027 -> 0.958) is absorbed by a tilt of the region's main process, nominal x (1 +- size x (2t - 1))
+# with t from 0 to 1 across that process's DNN range, one nuisance <nuisance>_<jet category> each
+# (all channels and eras): +-size at the ends, the observed end-to-end slope at 1 sigma. Without it
+# the slope would pull the shape nuisances the CRs constrain, and with them the SR. It costs ~1% of
+# the gain above (MX 300: -13.2% -> -11.7%). DY's is to be replaced by the DY closure (#190).
+control_region_shapes:
+  DY_CR: { process: DY, nuisance: CMS_bbww_dycr_shape, size: 0.04 }
+  TT_CR: { process: TT, nuisance: CMS_bbww_ttcr_shape, size: 0.02 }
 
 # Inputs left out of categories, given as jet categories (res2b), regions (TT_CR) or both
 # (TT_CR/res2b).

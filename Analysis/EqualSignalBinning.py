@@ -158,7 +158,13 @@ class Binning:
             b: cfg.get("backgrounds", {}).get(b, [b]) for b in card.backgrounds
         }
         self.drop = cfg.get("drop") or {}
-        self.single_bin_regions = set(cfg.get("single_bin_regions") or [])
+        if "single_bin_regions" in cfg:
+            raise ValueError(
+                "single_bin_regions is replaced by control_region_bins: {region: number of bins}"
+            )
+        # control regions: n bins of equal total background each (1 = the whole window)
+        self.cr_bins = dict(cfg.get("control_region_bins") or {})
+        self.cr_shapes = dict(cfg.get("control_region_shapes") or {})
         self.lowmass = cfg.get("lowmass_dy")
         if self.lowmass is not None:
             # the process that carries the estimate (DY when the low-mass sample is a member of it)
@@ -435,6 +441,37 @@ class Binning:
         factors[f"_{lm['nuisance']}_Down"] = float(down)
         return factors
 
+    def add_cr_shape(self, per_era, directory):
+        """The DNN-shape uncertainty of a control region's main process (control_region_shapes):
+        a linear tilt along the DNN score, nominal x (1 +- size x (2t - 1)), t from 0 to 1 between
+        the fine bins holding 1% and 99% of that process's yield in the window (eras summed). It is
+        a variation of that process like any other, `<nuisance>_<jet category>`, so the gates and
+        the writer treat it as such. It lets the binned control region's data / MC slope along the
+        score be absorbed there instead of pulling the shape nuisances it shares with the SR.
+        """
+        spec = self.cr_shapes.get(self.region(directory))
+        if not spec:
+            return
+        proc = spec["process"]
+        parts = [p[proc][""][0] for p in per_era.values() if proc in p]
+        if not parts:
+            return
+        c = np.cumsum(np.clip(sum(parts), 0.0, None))
+        if c[-1] <= 0:
+            return
+        lo = int(np.searchsorted(c, 0.01 * c[-1]))
+        hi = max(int(np.searchsorted(c, 0.99 * c[-1])), lo + 1)
+        t = np.clip((np.arange(len(c)) - lo) / (hi - lo), 0.0, 1.0)
+        tilt = float(spec["size"]) * (2.0 * t - 1.0)
+        name = f"{spec['nuisance']}_{self.window_key(directory)}"
+        for p in per_era.values():
+            if proc not in p:
+                continue
+            v, w = p[proc][""]
+            for sign, direction in ((1, "Up"), (-1, "Down")):
+                f = 1.0 + sign * tilt
+                p[proc][f"_{name}_{direction}"] = (v * f, w * f * f)
+
     def bin_window(self, mass, channel, category, directory, files):
         key = self.window_key(directory)
         window = self.windows[mass][key]
@@ -451,6 +488,7 @@ class Binning:
             template_shape = self.apply_template(
                 mode, per_era, raw, mass, channel, directory, files, window, x
             )
+        self.add_cr_shape(per_era, directory)
         bkgs = [b for b in self.members if any(b in p for p in per_era.values())]
         signals = self.card.resolved(self.card.signals, mass)
 
@@ -586,21 +624,29 @@ class Binning:
         def passes(i, j):
             return failure(i, j) is None
 
-        # control regions: one bin over the window (they constrain normalisations, not shapes)
-        n = (
-            1
-            if self.region(directory) in self.single_bin_regions
-            else self.n_bins[mass][key]
+        # SR: bins of equal signal. Control regions carry no signal: bins of equal total
+        # background (control_region_bins), so they constrain the shapes along the score too.
+        region = self.region(directory)
+        is_cr = region in self.cr_bins
+        n = int(self.cr_bins[region]) if is_cr else self.n_bins[mass][key]
+        c_share = (
+            cumulative(
+                np.clip(sum(summed(b, "")[0] for b in bkgs), 0.0, None)
+                if bkgs
+                else np.zeros(nb)
+            )
+            if is_cr
+            else c_sig
         )
         bins, hi = [], nb - 1
-        # equal signal from the top of the score down, each bin as narrow as the gates allow
+        # from the top of the score down, each bin as narrow as the gates allow
         while hi >= 0 and len(bins) < n - 1:
-            target = in_range(c_sig, 0, hi) / (n - len(bins))
+            target = in_range(c_share, 0, hi) / (n - len(bins))
             found = next(
                 (
                     i
                     for i in range(hi, -1, -1)
-                    if in_range(c_sig, i, hi) >= target and passes(i, hi)
+                    if in_range(c_share, i, hi) >= target and passes(i, hi)
                 ),
                 None,
             )
