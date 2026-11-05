@@ -1,3 +1,7 @@
+# HH->bbWW DL resonant datacards, spin-0 (radion) signal hypothesis.
+# The spin-2 card, x_hh_bbww_DL_run3_spin2.yaml, differs only in the signal processes, their
+# branching-ratio uncertainties and the limit-plot names and labels: keep the two in sync.
+# ${MX} and ${ERA} are filled by StatInference.
 analysis: hh_bbww
 type: resonant
 model:
@@ -11,21 +15,23 @@ signalFractionForRelevantBins: 0.2
 # statistics a handful of DY shapes go negative beyond tolerance in the sparsest DNN
 # slices, and resolveNegativeBins rejects them. Measured over 4 mass points, of ~500
 # background shapes each -- 2022: 5 rejected, 2022EE: 5, 2023: 2, 2023BPix: 6, and
-# Run3_Early: 0. It does not track luminosity; it tracks where DY's negative-weight
+# their combination: 0. It does not track luminosity; it tracks where DY's negative-weight
 # events land. Turning them back on wants either min_slice_bkg_each_neff on in
 # config/Datacards/binning_2d.yaml, so those slices are never cut, or a looser
 # max_n_sigma_for_negative_bins for DY. (Measured with binning_2d.yaml.)
 #
-# They stay in era_groups below regardless: Run3_Early is the combination of all four
-# datasets, which is a statement about the data, not about which limits we set.
+# They stay in era_groups below regardless: Run3_22_23 is the combination of all four
+# datasets, which is a statement about the data, not about which limits we set. The name
+# is the meta-era's of global.yaml's era_groups, whose plot style (config/plot/Run3_22_23.yaml)
+# the shape plots of the datacard step use.
 eras:
   # - Run3_2022
   # - Run3_2022EE
   # - Run3_2023
   # - Run3_2023BPix
-  - Run3_Early
+  - Run3_22_23
 era_groups:
-  Run3_Early:
+  Run3_22_23:
     - Run3_2022
     - Run3_2022EE
     - Run3_2023
@@ -34,36 +40,64 @@ channels:
   - muMu
   - eMu
   - eE
-# The datacard bins rebin_2d.py writes: one HME window per base category.
+# One datacard category per region and jet category, all in the frozen HME window of the jet
+# category (hme_windows_DL_v2610.yaml):
+#   SR_* : m_ll < 70 GeV, the DNN score in equal-signal bins;
+#   TT_* : TT_CR, m_ll > 110 GeV, one bin;
+#   DY_* : DY_CR, |m_ll - mZ| < 10 GeV, one bin.
+# The control regions constrain the TT and DY normalisations (CMS_bbww_norm_TT/DY_*, lnN below). The names carry no
+# "/" (they become the datacard bin names, and with them the names of the per-bin MC-stat
+# nuisances, which dhi's impact merging cannot handle with a "/"); input_categories maps each to
+# its directory in the histogram files.
 categories:
-  - SR/res2b_hmebox0
-  - SR/boosted_hmebox0
-  - SR/recovery_hmebox0
-
-# Must match the category_pattern the bins were written with.
-category_pattern: "{base_category}_hmebox{slice_idx}"
+  - SR_res2b
+  - SR_boosted
+  - SR_recovery
+  - TT_res2b
+  - TT_boosted
+  - TT_recovery
+  - DY_res2b
+  - DY_boosted
+  - DY_recovery
+input_categories:
+  SR_res2b: SR/res2b
+  SR_boosted: SR/boosted
+  SR_recovery: SR/recovery
+  TT_res2b: TT_CR/res2b
+  TT_boosted: TT_CR/boosted
+  TT_recovery: TT_CR/recovery
+  DY_res2b: DY_CR/res2b
+  DY_boosted: DY_CR/boosted
+  DY_recovery: DY_CR/recovery
 
 # Applied to the merged histograms before the datacards are built, by
 # PreprocessShapesTask. The chain knows nothing about what this does -- it supplies
 # --input, --output, --era and --config, and the script writes
-# "<era>/<variable>/<variable>.root". Here it cuts an HME window out of the 2D shapes and
-# bins the DNN inside it (binning_hmebox.yaml; binning_2d.yaml is the DNN-slice
-# alternative). Remove this block and the chain reads the merged histograms unchanged.
+# "<era>/<variable>/<variable>.root". Here it cuts each category's HME window out of the 2D
+# shapes, merges the merged-histogram processes into the backgrounds below and bins the DNN
+# inside the window into bins of equal signal (binning_eqsig_DL_v2610.yaml). Its input is the
+# Run3_Model_DYSplit merged histograms with the control regions (DY as DY_M_10to50 + DY_M_50;
+# TT_CR and DY_CR), e.g. --hists-version v2610_output_CR. Remove this block and the chain reads
+# the merged histograms unchanged.
+# --jobs: masses binned in parallel, one process each (< 1 GB). On condor give the task as many
+# CPUs: --PreprocessShapesTask-n-cpus 8.
 preprocess:
-  script: StatInference/bin_opt_2d/rebin_2d.py
+  script: Analysis/EqualSignalBinning.py
   args:
     - --binning-config
-    - config/Datacards/binning_hmebox.yaml
+    - config/Datacards/binning_eqsig_DL_v2610.yaml
+    - --jobs
+    - "8"
 
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
 
-  # The spin-0 (Radion) X->HH signal. Run3_Model histograms every hypothesis; this card picks one.
-  # A spin-2 card is this file with GluGluToBulkGraviton_bbWW_2L and GluGluToBulkGraviton_bbTauTau
-  # in place of GluGluToRadion_bbWW_2L and GluGluToRadion_bbTauTau (process names and the
-  # uncertainty patterns below), and wants its own binning.
+  # The spin-0 (radion) X->HH signal. Run3_Model histograms both hypotheses; the spin-2
+  # card is x_hh_bbww_DL_run3_spin2.yaml. The equal-signal binning follows this signal; the HME windows and the
+  # target numbers of bins are shared by both spins (the pDNN is spin-inclusive, and spin hardly
+  # changes the HH mass).
   - process: GluGluToRadion_bbWW_2L_${MX}
     hist_name: GluGluToRadion_bbWW_2L_${MX}
     # the produced X->HH points up to 1.5 TeV; the DNN has to be retrained over this
@@ -78,91 +112,36 @@ processes:
     is_signal: true
     allow_zero_integral: true
 
+  # The backgrounds are made by the preprocess step from the merged-histogram processes
+  # (binning_eqsig_DL_v2610.yaml: backgrounds):
+  #   TT         = TT + ttV
+  #   DY         = DY_M_10to50 + DY_M_50, normalised in DY_CR; low-mass DY in SR boosted
+  #                estimated from SR recovery, none in the control regions; in SR eE/muMu
+  #                resolved and SR boosted a smooth template replaces the DY MC (dy_template)
+  #   ST
+  #   Minor      = VV + VVV + H + W (W in recovery only)
+  # The binning only closes a bin once each of them passes its gates, for the nominal and every
+  # variation, so none of them has negative or single-event bins; the tolerances below are
+  # kept as a safety net.
   - process: TT
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
+  # All three channels. In eMu DY is mostly DY->tautau and is not small where the signal
+  # is: v2610, Run3_2022+2023+2023BPix, it is 16-56% of the background in the bins
+  # holding the best half of the signal at MX = 800-1200 (eMu recovery at 1200: 56%).
   - process: DY
-    channels:
-      - eE
-      - muMu
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
-
-  - process: VV
-    allow_negative_bins_within_error: true
-    max_n_sigma_for_negative_bins: 2
-    allow_zero_integral: true
 
   - process: ST
     allow_negative_bins_within_error: true
     max_n_sigma_for_negative_bins: 2
 
-  # Single merged background template for the boosted slices, all three channels.
-  #
-  # Why: DY has no usable MC statistics in the b-tagged same-flavour categories.
-  # Measured on Run3_Early (v2605a), summed over the four sub-eras, DY's effective
-  # MC count (yield/error)^2 has a median of 5.8 across the 232 eE/muMu SR slices
-  # and sits below the binning's own min_slice_bkg_neff of 4 in 42% of them, with several
-  # slices going negative outright. TT, ST and VV are all fine on their own (median
-  # N_eff 471 / 211 / 97, never below 4). So this is a DY problem, not a binning
-  # granularity problem -- there is no 4-slice DNN binning of eE/muMu in which DY is
-  # individually well measured, and merging DNN slices to chase it only buys a
-  # positive number that is still statistically meaningless.
-  #
-  # Why all four rather than only the small ones: over the 64 boosted slices,
-  # merging DY+ST+VV alone leaves 2 negative bins (eE/SR/boosted_dnn1 at m500);
-  # including TT leaves none anywhere. Those last 2 bins are consistent with zero
-  # and have 10x their size in positive donors, but the mass axis is binned by equal
-  # signal quantiles, so every bin of an n<=5 bin slice holds >= 1/n >= 20% of the
-  # signal and is therefore "relevant" under signalFractionForRelevantBins: 0.2 --
-  # and resolveNegativeBins rejects a negative relevant bin unconditionally,
-  # regardless of allow_negative_bins_within_error. Merging TT in as well avoids
-  # relying on that interaction at all: no negative bins, nothing to tolerate.
-  #
-  # Cost, stated plainly: boosted has one background rate instead of four, so TT
-  # cannot float independently there and the template's composition is frozen at the
-  # MC prediction. Accepted because boosted holds 2-80 background events per slice
-  # with no dedicated control region, and because autoMCStats (threshold 20, mode 1)
-  # was already pooling these bins' MC-stat uncertainty across processes.
-  #
-  # `subprocesses` naming other datacard processes replaces them here, so TT, DY, ST
-  # and VV keep their configuration above and simply do not enter the boosted bins.
-  #
-  # eMu is included as well. DY is restricted to eE/muMu in its own entry above and
-  # was therefore missing from eMu's boosted background entirely -- not because it is
-  # negligible there: over the 32 eMu boosted slices DY is 0.5% to 32% of the total
-  # background (median 6.5%), with N_eff 1.2-22 (median 5.9, a third of slices below
-  # 4). Merging is what lets it be counted, since the merged shape is assembled from
-  # subprocess histograms by path and does not consult DY's own channel list. So eMu
-  # boosted gains a real background it was previously missing, its DY never has to
-  # stand on its own statistics, and all three channels now describe their boosted
-  # background the same way. Folding DY in leaves zero negative bins in all 32 eMu
-  # slices. DY remains absent from eMu res2b/recovery, which are unchanged.
-  #
-  # Caveat: QCD_scale_TT/DY/ST/VV each match this process through its subprocesses
-  # (Uncertainty.appliesTo) and so apply to the whole merged yield rather than to
-  # their own constituent's share. TT dominates boosted, so QCD_scale_TT is roughly
-  # right; the other three over-cover. Net effect is a ~4.4% XS uncertainty where a
-  # yield-weighted treatment would give ~3% -- conservative, and small next to the
-  # MC-statistical noise this merge exists to remove.
-  #
-  # No negative-bin tolerance is set below on purpose: there are no negative bins to
-  # tolerate, and this template builds under the unmodified resolveNegativeBins.
-  #
-  # The numbers above are from binning_2d.yaml. With the HME box, dropping the merge
-  # measured free to slightly better; it is kept so this change is the binning alone.
-  - process: TotalBkg
-    subprocesses:
-      - TT
-      - DY
-      - ST
-      - VV
-    categories:
-      - SR/boosted
-
-  # - W
-  # - Other
+  - process: Minor
+    allow_negative_bins_within_error: true
+    max_n_sigma_for_negative_bins: 2
+    allow_zero_integral: true
 
 uncertainties:
   # Luminosity, as the Run 3 recommendation splits it: one component correlated across
@@ -601,27 +580,6 @@ uncertainties:
     type: shape
 
 
-  # For multiple values, Konstantin says do [ down, up ]
-  - name: QCD_scale_TT
-    type: lnN
-    processes:
-      - TT
-    value: [ -0.036, 0.025 ] # TT XS uncertainty in percentage from xsec yaml
-    # TT:
-    # crossSec: '923.6'
-    # reference: https://twiki.cern.ch/twiki/bin/view/LHCPhysics/TtbarNNLO#Updated_reference_cross_sections
-    # unc: +22.6 -33.4 (scale) +/-  22.8 (PDF alphas) -24.6 +25.4 (mass) (to be multiplied by the BR)
-
-  - name: QCD_scale_DY
-    type: lnN
-    processes:
-      - DY
-    value: [ -0.011, 0.007 ] # DY XS uncertainty in percentage from xsec yaml
-    # DY_NNLO_QCD+NLO_EW:
-    # crossSec: 2094.2 * 3
-    # reference: https://twiki.cern.ch/twiki/bin/viewauth/CMS/MATRIXCrossSectionsat13p6TeV
-    # unc: +0.7% - 1.1%, +- 1.0% PDF alphas
-
   - name: QCD_scale_ST
     type: lnN
     processes:
@@ -629,55 +587,135 @@ uncertainties:
     value: [ -0.022, +0.022 ]
     # Taken from ST to tW (largest uncertainty on XS) needs to be updated for each decay process later
 
-  - name: QCD_scale_VV
-    type: lnN
-    processes:
-      - VV
-    # WARNING: this is not a QCD scale uncertainty. XSDB's `unc` field is an absolute
-    # uncertainty in pb on its own Monte-Carlo integration, and 0.005 is just that
-    # number divided by the cross section (WW 0.3733/80.23 = 0.47%, WZ 0.1318/29.1 =
-    # 0.45%, ZZ 0.0649/12.75 = 0.51%; FLAF/config/crossSections13p6TeV.yaml:1051-1209).
-    # The real NNLO diboson scale uncertainty is several percent. Needs replacing with a
-    # number from the diboson theory reference; left as-is rather than guessed.
-    value: 0.005
-
-  - name: PDF_alphas
-    hasMultipleValues: True
-    type: lnN
-    value:
-      - value: 0.025
-        type: lnN
-        processes:
-          - TT
-      - value: 0.01
-        type: lnN
-        processes:
-          - DY
-      - value: 0.027
-        type: lnN
-        processes:
-          - ST
-
+  # Theory and normalisation uncertainties of the members of merged backgrounds (TT = TT + ttV,
+  # DY = DY_M_10to50 + DY_M_50, Minor = VV + VVV + H + W, and PDF_alphas across TT, ST, DY and
+  # Minor). The preprocess step writes each as a shape of the merged background that moves only
+  # that member's own part, by the member's own amount; the values and their sources are in
+  # binning_eqsig_DL_v2610.yaml (member_uncertainties).
+  - name: QCD_scale_TT
+    type: shape
+    processes: [ TT ]
+  # DY_M_50 only: low-mass DY has its own prior (CMS_bbww_norm_DY_lowmass)
+  - name: QCD_scale_DY
+    type: shape
+    processes: [ DY ]
+  - name: QCD_scale_ttV
+    type: shape
+    processes: [ TT ]
   - name: top_mass
-    hasMultipleValues: True
+    type: shape
+    processes: [ TT, ST ]
+  - name: PDF_alphas
+    type: shape
+    processes: [ TT, ST, DY, Minor ]
+  - name: CMS_bbww_minor_norm_VV
+    type: shape
+    processes: [ Minor ]
+  - name: CMS_bbww_minor_norm_VVV
+    type: shape
+    processes: [ Minor ]
+  - name: CMS_bbww_minor_norm_H
+    type: shape
+    processes: [ Minor ]
+  # W is only in recovery (binning_eqsig_DL_v2610.yaml: drop), in every region
+  - name: CMS_bbww_minor_norm_W
+    type: shape
+    processes: [ Minor ]
+    categories: [ SR_recovery, TT_recovery, DY_recovery ]
+
+  # The DY templates (binning_eqsig_DL_v2610.yaml: dy_template) replace the DY MC statistics in
+  # the same-flavour resolved categories and in boosted; each window's fit uncertainty is its own
+  # nuisance. Boosted eE and muMu share one fitted shape, but each channel's normalisation is its
+  # own DY MC yield, with its own statistical error: one nuisance per channel.
+  - name: CMS_bbww_dy_fit_eE_res2b
+    type: shape
+    processes: [ DY ]
+    channels: [ eE ]
+    categories: [ SR_res2b ]
+  - name: CMS_bbww_dy_fit_muMu_res2b
+    type: shape
+    processes: [ DY ]
+    channels: [ muMu ]
+    categories: [ SR_res2b ]
+  - name: CMS_bbww_dy_fit_eE_recovery
+    type: shape
+    processes: [ DY ]
+    channels: [ eE ]
+    categories: [ SR_recovery ]
+  - name: CMS_bbww_dy_fit_muMu_recovery
+    type: shape
+    processes: [ DY ]
+    channels: [ muMu ]
+    categories: [ SR_recovery ]
+  - name: CMS_bbww_dy_fit_eE_boosted
+    type: shape
+    processes: [ DY ]
+    channels: [ eE ]
+    categories: [ SR_boosted ]
+  - name: CMS_bbww_dy_fit_muMu_boosted
+    type: shape
+    processes: [ DY ]
+    channels: [ muMu ]
+    categories: [ SR_boosted ]
+  - name: CMS_bbww_dy_fit_eMu_boosted
+    type: shape
+    processes: [ DY ]
+    channels: [ eMu ]
+    categories: [ SR_boosted ]
+
+  # Low-mass DY in SR boosted is estimated from SR recovery into DY (binning_eqsig_DL_v2610.yaml:
+  # lowmass_dy); +-100% on that estimate.
+  - name: CMS_bbww_dy_lowmass
+    type: shape
+    processes: [ DY ]
+    categories: [ SR_boosted ]
+
+  # Low-mass DY (10 < m_ll < 50 GeV) is in no control region: both lie above 70 GeV. It is part of
+  # DY, so it shares the normalisation DY_CR fixes, and has a prior of its own on top, a shape of DY
+  # that moves only its low-mass part (binning_eqsig_DL_v2610.yaml: member_uncertainties). In SR
+  # boosted it is the estimate instead (CMS_bbww_dy_lowmass); there is none in the control regions.
+  - name: CMS_bbww_norm_DY_lowmass
+    type: shape
+    processes: [ DY ]
+    categories: [ SR_res2b, SR_recovery ]
+
+  # Normalisations of TT (incl. ttV) and DY (m_ll > 50 GeV): constrained priors, not free
+  # parameters. Each applies to the signal region and both control regions of its jet category,
+  # every channel and every era, so the control regions (TT_CR / DY_CR) constrain it in the fit.
+  # Boosted has ~100 events per era in either control region, so it shares the res2b one. The
+  # priors are generous (the cross-section uncertainties plus the modelling of our phase space);
+  # v2610 loose, Asimov: the control regions constrain them to TT +-4-5%, DY +-3-7%, and the
+  # expected limits equal those with free rateParams (<= 0.2%, MX 300-1300), also with priors
+  # half or twice as wide.
+  - name: CMS_bbww_norm_TT_res2b
     type: lnN
-    value:
-      - value: [ -0.027, 0.028 ]
-        type: lnN
-        processes:
-          - TT
-      - value: [ -0.015, 0.015 ] # Taken from tW for now (largest unc percentage)
-        type: lnN
-        processes:
-          - ST
+    processes: [ TT ]
+    categories: [ SR_res2b, TT_res2b, DY_res2b, SR_boosted, TT_boosted, DY_boosted ]
+    value: 0.10
+  - name: CMS_bbww_norm_TT_recovery
+    type: lnN
+    processes: [ TT ]
+    categories: [ SR_recovery, TT_recovery, DY_recovery ]
+    value: 0.10
+  - name: CMS_bbww_norm_DY_res2b
+    type: lnN
+    processes: [ DY ]
+    categories: [ SR_res2b, TT_res2b, DY_res2b, SR_boosted, TT_boosted, DY_boosted ]
+    value: 0.20
+  - name: CMS_bbww_norm_DY_recovery
+    type: lnN
+    processes: [ DY ]
+    categories: [ SR_recovery, TT_recovery, DY_recovery ]
+    value: 0.20
 
   # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
   # which is what makes them apply everywhere. Values from
   # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
   #
   # GluGluToRadion_bbWW_1L is the single-lepton signal and is not a process of this dilepton
-  # card; it belongs in these lists when the SL card gains them. Single Higgs and VH
-  # likewise, once they are added as processes.
+  # card; it belongs in these lists when the SL card gains them. The single-Higgs
+  # background H is not in them: it mixes H->bb, WW and tautau in one histogram, and its
+  # branching-ratio uncertainties (1-2 %) are small next to QCD_scale_H.
   #
   # BR_hww covers the whole bbWW signal although the sample is 2B2V: about 4.5 % of it is
   # H->ZZ->2l2nu, which this nuisance over-covers and BR_hzz does not cover at all.
@@ -685,7 +723,7 @@ uncertainties:
   # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
   # with re.match, anything else compared literally). They have to be: by the time an
   # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
-  # so the process is GluGluToRadion_bbWW_2L_700 and a literal "GluGluToRadion_bbWW_2L_${MX}" matches
+  # so the process is GluGluToRadion_bbWW_2L_700 and a literal "GluGluToRadion_bbWW_2L_<MX>" matches
   # nothing at all -- silently, since an uncertainty that applies to no process is simply
   # never added.
   - name: BR_hbb
@@ -715,49 +753,55 @@ autoMCStats:
   mode: 1
 
 campaigns:
-  Run3_Early: run3_early
+  # dhi's key for the four eras combined (its luminosity label)
+  Run3_22_23: run3_early
   Run3_2022: "2022preEE"
   Run3_2022EE: "2022postEE"
   Run3_2023: "2023preBPix"
   Run3_2023BPix: "2023postBPix"
 
+# Named and labelled with the spin, as in the spin-2 card; compared with the Run 2 DL
+# expected limit of the same spin (HIG-21-005 cards, recomputed). run2_external_limits.json holds every Run 2 reference, by channel and spin
+# (DL/spin0, DL/spin2; SL/... once available); `key` picks this plot's curve.
 limit_plots:
-  - name: run3_vs_run2
+  - name: spin0_run3_vs_run2
     # Draw 1/2 sigma bands
     bands: true
     datacards:
-      - { name: "Early Run 3", glob: "*.txt" }
+      - { name: "Early Run 3 spin-0 (radion)", glob: "*.txt" }
     lumi_projections:
-      - name: "Early Run 3 scaled to 138 fb^{-1}"
+      - name: "Early Run 3 spin-0 scaled to 138 fb^{-1}"
         lumi_target: 138
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin0" }
     plot_params: &limit_plot_style
       xsec: pb
       y_log: true
       x_min: 200
-      x_max: 1000
+      x_max: 1500
       y_min: 0.001
       y_max: 100
 
-  - name: channels
+  - name: spin0_channels
     datacards:
-      - { name: "Combined", glob: "*.txt" }
+      - { name: "Combined spin-0 (radion)", glob: "*.txt" }
       - { name: "ee", glob: "${ERA}/eE/*.txt" }
       - { name: "e#mu", glob: "${ERA}/eMu/*.txt" }
       - { name: "#mu#mu", glob: "${ERA}/muMu/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin0" }
     plot_params: *limit_plot_style
 
-  - name: categories
+  - name: spin0_categories
     datacards:
-      - { name: "Combined", glob: "*.txt" }
-      - { name: "res 2b", glob: "${ERA}/categories/SR_res2b/*.txt" }
-      - { name: "recovery", glob: "${ERA}/categories/SR_recovery/*.txt" }
-      - { name: "boosted", glob: "${ERA}/categories/SR_boosted/*.txt" }
+      - { name: "Combined spin-0 (radion)", glob: "*.txt" }
+      # each jet category with its own control regions (SR_res2b + TT_res2b + DY_res2b: dhi
+      # combines the cards of one mass), which constrain the TT / DY normalisations the SR shares
+      - { name: "res 2b", glob: "${ERA}/categories/*_res2b/*.txt" }
+      - { name: "recovery", glob: "${ERA}/categories/*_recovery/*.txt" }
+      - { name: "boosted", glob: "${ERA}/categories/*_boosted/*.txt" }
     external_limits:
-      - config/Datacards/run2_spin0_DL_external_limits.json
+      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin0" }
     plot_params: *limit_plot_style
 
 # Nuisance pulls and impacts, drawn by PlotPullsAndImpactsTask into

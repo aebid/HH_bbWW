@@ -208,7 +208,7 @@ Result for v1: `02_limits_v1_combined.png`.
 
 ## 12. Comparison with the production model and with Run 2
 
-- **Inputs.** Run 2 DL expected limits (spin 0, 138 fb⁻¹, `run2_spin0_DL_external_limits.json`);
+- **Inputs.** Run 2 DL expected limits (spin 0, 138 fb⁻¹, then `run2_spin0_DL_external_limits.json`, now `DL/spin0` of `config/Datacards/run2_external_limits.json`);
   the latest production DL expected limits (deployed model
   `config/DNN/DoubleLepton_Parametric_{Resolved,Boosted}_v1`, full analysis with systematics and
   TT/DY control regions, 2D DNN × DeepHME fit, 62.3 fb⁻¹, `slides_update_v8/limits_table.csv`).

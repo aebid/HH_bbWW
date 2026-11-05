@@ -1,0 +1,193 @@
+# Equal-signal binning of the DL fit inputs, v2610: read by Analysis/EqualSignalBinning.py, the
+# `preprocess:` step of x_hh_bbww_DL_run3.yaml.
+#
+# Each datacard category is one frozen HME window (hme_windows_DL_v2610.yaml) of the 2D
+# DNN_m<MX>_vs_HME shapes, binned in the DNN score into bins of equal signal, from the top of the
+# score down. A bin is only closed once the backgrounds in it pass the gates below, so a window can
+# end with fewer bins than its target; nothing is ever left negative or carried by one large-weight
+# event.
+
+# [low, high] HME window per mass and category, in GeV.
+windows: config/Datacards/hme_windows_DL_v2610.yaml
+
+# Target number of bins per window, the n <= 20 that maximises the expected sensitivity of a
+# TT-only fit (v2610 study). The gates may merge the lowest bins into fewer.
+n_bins:
+  250: { res2b: 16, recovery: 20, boosted: 1 }
+  260: { res2b: 20, recovery: 20, boosted: 12 }
+  270: { res2b: 20, recovery: 20, boosted: 17 }
+  280: { res2b: 20, recovery: 20, boosted: 19 }
+  300: { res2b: 20, recovery: 19, boosted: 14 }
+  320: { res2b: 20, recovery: 20, boosted: 19 }
+  350: { res2b: 20, recovery: 20, boosted: 18 }
+  360: { res2b: 20, recovery: 20, boosted: 20 }
+  400: { res2b: 20, recovery: 18, boosted: 20 }
+  450: { res2b: 14, recovery: 20, boosted: 17 }
+  500: { res2b: 19, recovery: 18, boosted: 19 }
+  550: { res2b: 17, recovery: 20, boosted: 17 }
+  600: { res2b: 15, recovery: 18, boosted: 14 }
+  650: { res2b: 14, recovery: 19, boosted: 14 }
+  700: { res2b: 20, recovery: 15, boosted: 16 }
+  750: { res2b: 16, recovery: 19, boosted: 8 }
+  800: { res2b: 16, recovery: 18, boosted: 12 }
+  850: { res2b: 16, recovery: 20, boosted: 6 }
+  900: { res2b: 16, recovery: 20, boosted: 7 }
+  1000: { res2b: 15, recovery: 15, boosted: 7 }
+  1100: { res2b: 13, recovery: 16, boosted: 3 }
+  1200: { res2b: 16, recovery: 18, boosted: 5 }
+  1300: { res2b: 17, recovery: 13, boosted: 6 }
+  1400: { res2b: 8, recovery: 13, boosted: 3 }
+  1500: { res2b: 10, recovery: 13, boosted: 3 }
+
+# What every bin has to satisfy, summed over the eras of the card, for the nominal and for every
+# up/down variation:
+#   - total background >= min_bkg, with an effective MC count (sum w)^2 / sum w^2 >= min_bkg_neff;
+#   - every background >= 0;
+#   - every background that is at least exempt_fraction of its window's total: > min_each, with
+#     N_eff >= min_each_neff, and each of its variations with N_eff >= min_variation_neff.
+gates:
+  min_bkg: 0.2
+  min_bkg_neff: 4
+  min_each: 0.01
+  min_each_neff: 2
+  min_variation_neff: 2
+  exempt_fraction: 0.05
+
+# The datacard backgrounds, each the sum of the merged-histogram processes listed (a variation
+# a member lacks enters with that member's nominal).
+#   TT    = TT + ttV: ttV alone (a few % of the background) has too few, too heavily weighted events
+#           to pass the gates; TT absorbs it, and its uncertainties stay its own below.
+#   DY    = low-mass (10 < m_ll < 50 GeV) + M>50 DY (Run3_Model_DYSplit). Low-mass DY alone has too
+#           few, too heavily weighted events at high DNN score to pass the gates, so as a process of
+#           its own it forces wide top bins (MX 500 res2b: ~15% worse expected limit). Merged, it
+#           keeps a prior of its own (member_uncertainties: CMS_bbww_norm_DY_lowmass); in SR boosted
+#           it is estimated (lowmass_dy).
+#   Minor = VV + VVV + H + W, each <= ~10% of the background where the signal is.
+backgrounds:
+  TT: [ TT, ttV ]
+  DY: [ DY_M_10to50, DY_M_50 ]
+  ST: [ ST ]
+  Minor: [ VV, VVV, H, W ]
+
+# Control regions: one bin over the category's HME window. They are pure enough to fix the
+# normalisations (TT_CR res2b ~90% TT, DY_CR recovery ~96% DY) and carry no signal to bin by.
+single_bin_regions: [ TT_CR, DY_CR ]
+
+# Inputs left out of categories, given as jet categories (res2b), regions (TT_CR) or both
+# (TT_CR/res2b).
+#   W: non-prompt leptons, from MC; 0.3-1% of the background in res2b and boosted and ~0 where
+#      the signal is, and its few large-weight events break the gates there; kept in recovery
+#      (3% of the eMu background), in every region.
+#   DY_M_10to50: generated with m_ll < 50 GeV, so in the control regions (m_ll > 110 GeV and the Z
+#      peak) only a few mismeasured, partly negative-weight events, < 1% of their background. In
+#      SR boosted its MC is replaced by the estimate of lowmass_dy.
+drop:
+  W: [ res2b, boosted ]
+  DY_M_10to50: [ TT_CR, DY_CR, SR/boosted ]
+
+# Low-mass DY in SR boosted: its MC there is a few large-weight events, so it is estimated per bin
+# from recovery of the same region, where it has statistics, transferred with the much better
+# populated M>50 sample:
+#   L = lowmass(reference) x M50(category) / M50(reference),
+# all three in the category's HME window, summed over the eras and shared out to them by their M>50
+# yield. L is added to `output` (DY): it is proportional to the category's M>50 DY, so it scales
+# with DY's normalisation. The variations of DY take L at its nominal value, and `nuisance` scales
+# it by nuisance_factors [ down, up ] (+-100%).
+lowmass_dy:
+  process: DY_M_10to50
+  output: DY
+  transfer: DY_M_50
+  regions: [ SR ]
+  categories: [ boosted ]
+  reference: recovery
+  nuisance: CMS_bbww_dy_lowmass
+  nuisance_factors: [ 0.0, 2.0 ]
+
+# Smooth DY templates (Analysis/DYTemplate.py) in place of the DY MC where it is a few large,
+# partly negative weights at high DNN score: the same-flavour resolved categories and SR boosted.
+# A fit of exp(polynomial) to the DNN distribution in the window, summed over the eras, in
+# effective counts (Poisson likelihood; neighbouring bins grouped until positive, so negative
+# weights stay in).
+#   tail: each member (DY_M_50, DY_M_10to50) on its own: the raw MC below its fitted peak plus
+#         `shift` widths, an exp(poly<deg>) fit above. In eMu DY is DY->tautau with statistics
+#         enough, and the MC is kept.
+#   fit_only: SR boosted, too few events for a raw core: an exp(poly2) fit below that point and
+#         the tail fit above, eE and muMu fitted together (pool), eMu alone, times each channel's
+#         DY MC yield in the window, whose own statistical error (1 / sqrt(N_eff)) is added to
+#         the band. The low-mass estimate there (lowmass_dy) keeps its window total, with the DNN
+#         shape fit(low-mass) x template / fit(DY_M_50) of the reference.
+# The template is shared out to the eras by their share_by yield in the window; a DY variation
+# of an era is the template times that era's varied / nominal window yield, and a member
+# uncertainty moves its own member's template. The bins kept raw (tail, below its start) keep
+# their MC statistical error; in the fitted bins it is negligible: the template's band, the
+# larger difference to two alternative fits (exp(poly2) from the peak, whole-window exp(poly4))
+# with the tail's 1 / sqrt(N_eff), is the shape nuisance <nuisance>_<channel>_<category>
+# instead. The t3s settings below closed best on the v2610 MC.
+dy_template:
+  process: DY
+  share_by: DY_M_50
+  nuisance: CMS_bbww_dy_fit
+  fit: { deg: 3, shift: 1.0, merge: true }
+  tail:
+    regions: [ SR ]
+    channels: [ eE, muMu ]
+    categories: [ res2b, recovery ]
+  fit_only:
+    regions: [ SR ]
+    categories: [ boosted ]
+    pool: [ [ eE, muMu ], [ eMu ] ]
+
+# Uncertainties on a member of a merged background, written as shape variations of that background
+# so each member keeps its own size on its own part: variation = nominal + value x member nominal,
+# value = [ down, up ] (a single number v means [ -v, v ]). They replace the per-process lnN of a
+# card with separate processes; the datacard configuration declares them as shapes.
+member_uncertainties:
+  # TT: crossSec 923.6 pb,
+  # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/TtbarNNLO#Updated_reference_cross_sections
+  # unc: +22.6 -33.4 (scale) +/- 22.8 (PDF alphas) -24.6 +25.4 (mass)
+  QCD_scale_TT:
+    - { member: TT, value: [ -0.036, 0.025 ] }
+  # ttV (ttZ + ttW): there is no LHC Top WG 13.6 TeV recommendation yet. +-12 % covers the NLO QCD
+  # scale uncertainty of both ttZ and ttW; replace with the official numbers once they exist.
+  QCD_scale_ttV:
+    - { member: ttV, value: 0.12 }
+  # DY NNLO QCD + NLO EW, 2094.2 x 3 pb, +0.7 -1.1 %:
+  # https://twiki.cern.ch/twiki/bin/viewauth/CMS/MATRIXCrossSectionsat13p6TeV
+  # On DY_M_50 only: low-mass DY has its own prior (CMS_bbww_norm_DY_lowmass below).
+  QCD_scale_DY:
+    - { member: DY_M_50, value: [ -0.011, 0.007 ] }
+  top_mass:
+    - { member: TT, value: [ -0.027, 0.028 ] }
+    - { member: ST, value: [ -0.015, 0.015 ] }   # taken from tW for now (largest)
+  PDF_alphas:
+    - { member: TT, value: 0.025 }
+    - { member: ttV, value: 0.03 }
+    - { member: ST, value: 0.027 }
+    - { member: DY_M_10to50, value: 0.01 }
+    - { member: DY_M_50, value: 0.01 }
+    - { member: H, value: 0.035 }
+  # WARNING: this is not a QCD scale uncertainty. XSDB's `unc` field is an absolute uncertainty in
+  # pb on its own Monte-Carlo integration, and 0.005 is just that number divided by the cross section
+  # (WW 0.3733/80.23 = 0.47%, WZ 0.1318/29.1 = 0.45%, ZZ 0.0649/12.75 = 0.51%;
+  # FLAF/config/crossSections13p6TeV.yaml:1051-1209). The real NNLO diboson scale uncertainty is
+  # several percent. Needs replacing with a number from the diboson theory reference.
+  CMS_bbww_minor_norm_VV:
+    - { member: VV, value: 0.005 }
+  # VVV: no theory reference collected. PROPOSAL, to be confirmed.
+  CMS_bbww_minor_norm_VVV:
+    - { member: VVV, value: 0.15 }
+  # Single Higgs is one process (ggH + VBFH + VH + ttH), so it gets one normalisation, ttH's QCD
+  # scale (largest of the production modes, expected to dominate a two-b-jet dilepton selection):
+  # https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWG136TeVxsec_extrap (13.6 TeV, mH = 125),
+  # ttH +6.0 -9.3 % (QCD scale), +-3.5 % (PDF+alpha_s, in PDF_alphas above).
+  CMS_bbww_minor_norm_H:
+    - { member: H, value: [ -0.093, 0.06 ] }
+  # W+jets enters a dilepton selection through a nonprompt lepton, which MC models poorly; this is
+  # a normalisation uncertainty on that, not a cross-section one. PROPOSAL, to be confirmed.
+  CMS_bbww_minor_norm_W:
+    - { member: W, value: 0.3 }
+  # Low-mass DY (10 < m_ll < 50 GeV) is in no control region (both are above 70 GeV): on top of the
+  # DY normalisation fixed by DY_CR, which it shares, a prior of its own. PROPOSAL (2026-10-27), to
+  # be revisited with a low-m_ll study. In SR boosted it is the estimate (lowmass_dy) instead.
+  CMS_bbww_norm_DY_lowmass:
+    - { member: DY_M_10to50, value: 0.30 }
