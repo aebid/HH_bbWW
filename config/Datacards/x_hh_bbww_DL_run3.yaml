@@ -625,30 +625,10 @@ uncertainties:
     processes: [ Minor ]
     categories: [ SR_recovery, TT_recovery, DY_recovery ]
 
-  # The DY templates (binning_eqsig_DL_v2610.yaml: dy_template) replace the DY MC statistics in
-  # the same-flavour resolved categories and in boosted; each window's fit uncertainty is its own
-  # nuisance. Boosted eE and muMu share one fitted shape, but each channel's normalisation is its
-  # own DY MC yield, with its own statistical error: one nuisance per channel.
-  - name: CMS_bbww_dy_fit_eE_res2b
-    type: shape
-    processes: [ DY ]
-    channels: [ eE ]
-    categories: [ SR_res2b ]
-  - name: CMS_bbww_dy_fit_muMu_res2b
-    type: shape
-    processes: [ DY ]
-    channels: [ muMu ]
-    categories: [ SR_res2b ]
-  - name: CMS_bbww_dy_fit_eE_recovery
-    type: shape
-    processes: [ DY ]
-    channels: [ eE ]
-    categories: [ SR_recovery ]
-  - name: CMS_bbww_dy_fit_muMu_recovery
-    type: shape
-    processes: [ DY ]
-    channels: [ muMu ]
-    categories: [ SR_recovery ]
+  # The DY template (binning_eqsig_DL_v2610.yaml: dy_template) replaces the DY MC statistics in
+  # SR boosted; each window's fit uncertainty is its own nuisance. Boosted eE and muMu share one
+  # fitted shape, but each channel's normalisation is its own DY MC yield, with its own statistical
+  # error: one nuisance per channel. The resolved categories keep the raw DY MC (autoMCStats).
   - name: CMS_bbww_dy_fit_eE_boosted
     type: shape
     processes: [ DY ]

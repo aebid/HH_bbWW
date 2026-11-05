@@ -484,7 +484,13 @@ class Binning:
         x = 0.5 * (x_edges[1:] + x_edges[:-1])
         mode = self.template_mode(channel, directory)
         template_shape = None
+        raw_dy = None
         if mode:
+            # the raw MC the template replaces, summed over the eras: checked against the
+            # template in the final bins (template_pulls)
+            proc = self.dy_template["process"]
+            parts = [p[proc][""] for p in per_era.values() if proc in p]
+            raw_dy = (sum(p[0] for p in parts), sum(p[1] for p in parts))
             template_shape = self.apply_template(
                 mode, per_era, raw, mass, channel, directory, files, window, x
             )
@@ -701,6 +707,10 @@ class Binning:
                 float(sum(get(b, "", i, j)[0] for b in bkgs)) for i, j in bins
             ],
         }
+        if raw_dy is not None:
+            self.check_template(
+                raw_dy, summed, bins, mass, channel, directory, category, key
+            )
 
         # the low-mass estimate is shared out to the eras by their M>50 yield in each bin
         # (a negative era sum counts as none, so every share is in [0, 1])
@@ -717,6 +727,35 @@ class Binning:
                     vals.append((lv * share, lw * share))
                 lowmass_by_era[e] = vals
         return per_era, bins, edges, factors, lowmass_by_era
+
+    def check_template(
+        self, raw_dy, summed, bins, mass, channel, directory, category, key
+    ):
+        """Pull of the raw DY MC against its template in each final bin,
+        (raw - template) / sqrt(raw MC variance + template band^2), into binning.json
+        (template_pulls); a warning when one is beyond dy_template.guard_sigma. A template that
+        is smooth but far from the MC it replaces in the bins that set the limit is biased
+        (e.g. a falling fit where the MC stays up), not a better estimate."""
+        t = self.dy_template
+        proc = t["process"]
+        tmpl, _ = summed(proc, "")
+        up, _ = summed(proc, f"_{t['nuisance']}_{channel}_{key}_Up")
+        pulls = []
+        for i, j in bins:
+            r, v = float(raw_dy[0][i : j + 1].sum()), float(raw_dy[1][i : j + 1].sum())
+            y, u = float(tmpl[i : j + 1].sum()), float(up[i : j + 1].sum())
+            err = np.sqrt(max(v, 0.0) + (u - y) ** 2)
+            pulls.append(round((r - y) / err, 3) if err > 0 else 0.0)
+        self.record[str(mass)][channel][category]["template_pulls"] = pulls
+        limit = t.get("guard_sigma", 3.0)
+        bad = [(k, p) for k, p in enumerate(pulls) if abs(p) > limit]
+        if bad:
+            print(
+                f"WARNING: {channel}/{directory} MX={mass}: the DY template is more than "
+                f"{limit} sigma from the raw MC in bins {bad} (bin, pull; highest score "
+                "last)",
+                flush=True,
+            )
 
     def run_mass(self, mass):
         """Bin and write every window of one mass; returns its binning.json record."""
