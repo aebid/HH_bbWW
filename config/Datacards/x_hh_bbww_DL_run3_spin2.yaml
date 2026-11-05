@@ -579,6 +579,72 @@ uncertainties:
   - name: ps_fsr
     type: shape
 
+  # PDF and QCD-scale shape uncertainties (weights.yaml qcd_scale / pdf): the members reduced to
+  # Up/Down per bin after the process sum (7-point envelope; Hessian sum with alpha_s), shape and
+  # acceptance only, next to the rate terms above. One per histogram process (both DY mass
+  # ranges share one, the signal's mass points share one); the preprocess merges a member's
+  # variation into its card process, the other members staying at their nominal.
+  - name: QCDscale_shape_TT
+    type: shape
+    processes: [ TT ]
+  - name: QCDscale_shape_ttV
+    type: shape
+    processes: [ TT ]
+  - name: QCDscale_shape_DY
+    type: shape
+    processes: [ DY ]
+  - name: QCDscale_shape_ST
+    type: shape
+    processes: [ ST ]
+  - name: QCDscale_shape_VV
+    type: shape
+    processes: [ Minor ]
+  - name: QCDscale_shape_VVV
+    type: shape
+    processes: [ Minor ]
+  - name: QCDscale_shape_H
+    type: shape
+    processes: [ Minor ]
+  - name: QCDscale_shape_W
+    type: shape
+    processes: [ Minor ]
+  - name: QCDscale_shape_GluGluToBulkGraviton_bbWW_2L
+    type: shape
+    processes: [ ^GluGluToBulkGraviton_bbWW_2L_ ]
+  - name: QCDscale_shape_GluGluToBulkGraviton_bbTauTau
+    type: shape
+    processes: [ ^GluGluToBulkGraviton_bbTauTau_ ]
+  - name: pdf_shape_TT
+    type: shape
+    processes: [ TT ]
+  - name: pdf_shape_ttV
+    type: shape
+    processes: [ TT ]
+  - name: pdf_shape_DY
+    type: shape
+    processes: [ DY ]
+  - name: pdf_shape_ST
+    type: shape
+    processes: [ ST ]
+  - name: pdf_shape_VV
+    type: shape
+    processes: [ Minor ]
+  - name: pdf_shape_VVV
+    type: shape
+    processes: [ Minor ]
+  - name: pdf_shape_H
+    type: shape
+    processes: [ Minor ]
+  - name: pdf_shape_W
+    type: shape
+    processes: [ Minor ]
+  - name: pdf_shape_GluGluToBulkGraviton_bbWW_2L
+    type: shape
+    processes: [ ^GluGluToBulkGraviton_bbWW_2L_ ]
+  - name: pdf_shape_GluGluToBulkGraviton_bbTauTau
+    type: shape
+    processes: [ ^GluGluToBulkGraviton_bbTauTau_ ]
+
 
   - name: QCD_scale_ST
     type: lnN
