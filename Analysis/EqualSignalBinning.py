@@ -1,8 +1,8 @@
 """Equal-signal binning of the 2D DNN x HME fit inputs inside fixed HME windows.
 
 The `preprocess:` step of a datacard configuration (StatInference's PreprocessShapesTask calls
-it with --input, --output, --era and --config, and --spin for a configuration with `spins:`:
-the bins follow that spin's signal). For every mass point and datacard category it
+it with --input, --output, --era and --config; the bins follow the card's signal). For every
+mass point and datacard category it
 cuts the category's HME window out of the 2D merged histograms, merges the merged-histogram
 processes into the card's backgrounds, and bins the DNN score inside the window into bins of
 equal signal, from the top of the score down. A bin is only closed once every background in it
@@ -23,7 +23,6 @@ import argparse
 import json
 import multiprocessing
 import os
-import sys
 from concurrent.futures import ProcessPoolExecutor
 from string import Template
 
@@ -37,9 +36,6 @@ from DYTemplate import fit_template, lowmass_boost_shape, tail_template
 ROOT.gROOT.SetBatch(True)
 # config/... paths are relative to the analysis area this script belongs to
 ANALYSIS_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# the datacard configuration is read as StatInference reads it (its spin axis)
-sys.path.insert(0, ANALYSIS_PATH)
-from StatInference.common.card_config import card_spins, load_card_config  # noqa: E402
 
 
 def analysis_file(path):
@@ -103,13 +99,9 @@ def variation_suffixes(names, process):
 class Card:
     """What the binning needs from the datacard configuration."""
 
-    def __init__(self, path, era, spin=None):
-        spins = card_spins(load_card_config(path), path)
-        if spin is None and spins != [None]:
-            raise ValueError(
-                f"{path} declares spins ({', '.join(spins)}); say which card with --spin"
-            )
-        cfg = load_card_config(path, spin)
+    def __init__(self, path, era):
+        with open(path) as f:
+            cfg = yaml.safe_load(f)
         self.eras = cfg.get("era_groups", {}).get(era, [era])
         self.channels = cfg["channels"]
         mapping = cfg.get("input_categories") or {}
@@ -764,11 +756,6 @@ def main():
         "--era", required=True, help="the card's era (a group era is summed)"
     )
     ap.add_argument("--config", required=True, help="the datacard configuration")
-    ap.add_argument(
-        "--spin",
-        default=None,
-        help="the spin of a configuration with `spins:` (the bins follow its signal)",
-    )
     ap.add_argument("--binning-config", required=True)
     ap.add_argument(
         "--masses",
@@ -783,7 +770,7 @@ def main():
     )
     args = ap.parse_args()
 
-    card = Card(args.config, args.era, args.spin)
+    card = Card(args.config, args.era)
     if args.masses:
         card.masses = [int(m) for m in args.masses.split(",")]
     binning = Binning(

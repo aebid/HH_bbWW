@@ -70,19 +70,6 @@ def load_config(path):
         return yaml.safe_load(f)
 
 
-def load_card(path, spin=None):
-    """The datacard configuration as StatInference reads it: for a configuration with
-    `spins:`, the card of `spin` (its first spin if None)."""
-    sys.path.insert(
-        0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    )
-    from StatInference.common.card_config import card_spins, load_card_config
-
-    if spin is None:
-        spin = card_spins(load_card_config(path), path)[0]
-    return load_card_config(path, spin)
-
-
 class CategoryNaming:
     """Take a sliced category name apart with the pattern that put it together.
 
@@ -727,11 +714,6 @@ def main():
     )
     p.add_argument("--config", required=True, help="Datacard configuration YAML.")
     p.add_argument(
-        "--spin",
-        default=None,
-        help="The spin of a configuration with `spins:` (default: its first).",
-    )
-    p.add_argument(
         "--binning-config",
         default=None,
         help="Binning YAML, for category_pattern and slice_var. Defaults to the "
@@ -765,7 +747,7 @@ def main():
     )
     args = p.parse_args()
 
-    cfg = load_card(args.config, args.spin)
+    cfg = load_config(args.config)
     param_name = cfg["model"]["parameters"][0]
 
     group = args.era_group
