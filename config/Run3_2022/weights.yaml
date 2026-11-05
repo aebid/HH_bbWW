@@ -89,11 +89,11 @@ norm:
   # are summed (FLAF Common/TheoryUncertainties.py): the 7-point envelope, and the Hessian sum
   # with alpha_s. The members are normalised to their own total, so these are shape and
   # acceptance only; the rates stay with the inclusive QCD_scale_* / PDF_alphas lnN of the
-  # datacards. Filled only for the fit inputs. One nuisance per process; both DY mass ranges
-  # share one, and so do the mass points of a signal.
+  # datacards, so these are named *_shape_*. Filled only for the fit inputs. One nuisance per
+  # process; both DY mass ranges share one, and so do the mass points of a signal.
   qcd_scale:
     expression: weight_base_qcd_scale{scale}_rel * final_weight
-    name: QCDscale_{process}_{}
+    name: QCDscale_shape_{process}_{}
     reduction: envelope
     variables: &theory_unc_variables [ "^DNN_m[0-9]+_vs_HME$" ]
     process_groups: &theory_unc_groups
@@ -106,7 +106,7 @@ norm:
       GluGluToBulkGraviton_bbTauTau: [ "^GluGluToBulkGraviton_bbTauTau_[0-9]+$" ]
   pdf:
     expression: weight_base_pdf{scale}_rel * final_weight
-    name: pdf_{process}_{}
+    name: pdf_shape_{process}_{}
     reduction: hessian
     variables: *theory_unc_variables
     process_groups: *theory_unc_groups
