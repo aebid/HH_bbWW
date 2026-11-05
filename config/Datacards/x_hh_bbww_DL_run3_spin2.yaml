@@ -43,9 +43,11 @@ channels:
 # One datacard category per region and jet category, all in the frozen HME window of the jet
 # category (hme_windows_DL_v2610.yaml):
 #   SR_* : m_ll < 70 GeV, the DNN score in equal-signal bins;
-#   TT_* : TT_CR, m_ll > 110 GeV, one bin;
-#   DY_* : DY_CR, |m_ll - mZ| < 10 GeV, one bin.
-# The control regions constrain the TT and DY normalisations (CMS_bbww_norm_TT/DY_*, lnN below). The names carry no
+#   TT_* : TT_CR, m_ll > 110 GeV, the DNN score in 5 bins of equal background;
+#   DY_* : DY_CR, |m_ll - mZ| < 10 GeV, the same (binning_eqsig_DL_v2610.yaml: control_region_bins).
+# The control regions constrain the TT and DY normalisations (CMS_bbww_norm_TT/DY_*, lnN below)
+# and, binned, the shape nuisances shared with the SR (each with its own DNN tilt,
+# CMS_bbww_{tt,dy}cr_shape_*). The names carry no
 # "/" (they become the datacard bin names, and with them the names of the per-bin MC-stat
 # nuisances, which dhi's impact merging cannot handle with a "/"); input_categories maps each to
 # its directory in the histogram files.
@@ -753,7 +755,7 @@ uncertainties:
   # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
   # with re.match, anything else compared literally). They have to be: by the time an
   # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
-  # so the process is GluGluToRadion_bbWW_2L_700 and a literal "GluGluToBulkGraviton_bbWW_2L_<MX>" matches
+  # so the process is GluGluToBulkGraviton_bbWW_2L_700 and a literal "GluGluToBulkGraviton_bbWW_2L_<MX>" matches
   # nothing at all -- silently, since an uncertainty that applies to no process is simply
   # never added.
   - name: BR_hbb

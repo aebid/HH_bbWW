@@ -621,6 +621,17 @@ class Binning:
                         return f"{b}{s} N_eff {yv * yv / wv if wv > 0 else 0:.2f}"
             return None
 
+        def negative(i, j):
+            """The first background (nominal or variation) below 0 in fine bins i..j, or None.
+            failure() can stop at an earlier gate, so its message does not say whether one is.
+            """
+            for b in bkgs:
+                for s in [""] + list(suffixes[b]):
+                    y = get(b, s, i, j)[0]
+                    if y < -1e-12:
+                        return f"{b}{s} {y:.3g} < 0"
+            return None
+
         def passes(i, j):
             return failure(i, j) is None
 
@@ -660,11 +671,12 @@ class Binning:
             while not passes(*last):
                 if not bins:
                     why = failure(0, nb - 1)
-                    if "< 0" in why:
+                    neg = negative(0, nb - 1)
+                    if neg:
                         # a negative background cannot be written, at any binning
                         raise RuntimeError(
                             f"{channel}/{directory} MX={mass}: the whole window fails "
-                            f"the gates: {why}"
+                            f"the gates: {why}; {neg}"
                         )
                     # too few events for any finer binning: the window is one bin
                     print(

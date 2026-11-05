@@ -12,7 +12,8 @@ the peak (the mask) at degree 3.
 - no cubic term: the data want the leading coefficient at 0, the boundary of -exp(p). The fit has
   to be valid and still give the true function.
 
-    python3 test/test_dy_template.py    (needs numpy and iminuit; run from the repository)
+    python3 test/test_dy_template.py    (needs numpy and iminuit, e.g. in the CMSSW environment;
+                                         under pytest without iminuit it is skipped)
 """
 
 import os
@@ -20,6 +21,14 @@ import sys
 import unittest
 
 import numpy as np
+
+try:
+    import iminuit  # noqa: F401
+except ImportError:
+    # FLAF's CI image has no iminuit; the test runs where the preprocessing does (CMSSW)
+    import pytest
+
+    pytest.skip("needs iminuit", allow_module_level=True)
 
 sys.path.insert(
     0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Analysis")
