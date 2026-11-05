@@ -24,6 +24,15 @@ partly negative weights; a smooth fit there replaces it. Everything here works o
 import numpy as np
 from iminuit import Minuit
 
+# LogPolyFit's minimisation: the limits of p in the leading coefficient -exp(p) (|a| from 2e-9 to 2e4: below
+# is nothing at these scales, above only overflows exp in a stray migrad step); the starts of that
+# coefficient (degree >= 2, degree 1); how often a migrad that did not converge is resumed; and by how much
+# a later start's NLL must be lower to replace an earlier one.
+P_MIN, P_MAX = -20.0, 10.0
+LEAD_STARTS = {False: (-0.5, -0.05, -0.0025), True: (-1.0, -0.1, -0.01)}
+MIGRAD_RETRIES = 3
+FVAL_TIE = 1e-4
+
 
 class LogPolyFit:
     def __init__(self, x, y, w2, deg=2, mask=None, merge=True):
@@ -56,12 +65,29 @@ class LogPolyFit:
         )
         if deg >= 2:
             start[2] = -0.5
-        if deg == 1:
-            start[1] = -1.0
-        self.m = Minuit(self._nll, self._to_p(start))
-        self.m.errordef = Minuit.LIKELIHOOD
-        self.m.strategy = 1
-        self.m.migrad()
+        # The leading coefficient is -exp(p). Started at 0 (p = log 1e-6), its gradient is ~1e-6:
+        # migrad stopped on that plateau and called it converged, short of the minimum by up to ~100 in
+        # NLL, and whether it drifted off depended on the last bits of the arithmetic -- numpy's AVX2
+        # and AVX-512 code paths differ there, so the template changed with the node's CPU. So it
+        # starts at a few negative values instead, and the best valid fit is kept. The limit on p
+        # makes a minimum where the data prefer the coefficient at 0 a point (|a| <= 2e-9, nothing at
+        # these scales), and a migrad that stops short is resumed.
+        best = None
+        for lead in LEAD_STARTS[deg == 1]:
+            start[deg] = lead
+            m = Minuit(self._nll, self._to_p(start))
+            m.errordef = Minuit.LIKELIHOOD
+            m.limits[deg] = (P_MIN, P_MAX)
+            m.strategy = 2
+            m.migrad()
+            for _ in range(MIGRAD_RETRIES):
+                if m.valid:
+                    break
+                m.migrad()
+            # strictly lower to replace: equal minima keep the first start, on every machine
+            if best is None or (m.valid, -m.fval) > (best.valid, -best.fval + FVAL_TIE):
+                best = m
+        self.m = best
         self.m.hesse()
         self.ok = self.m.valid
 
@@ -97,7 +123,7 @@ class LogPolyFit:
     @staticmethod
     def _to_p(a):
         p = np.array(a, float)
-        p[-1] = np.log(max(-a[-1], 1e-6))
+        p[-1] = max(np.log(max(-a[-1], np.exp(P_MIN))), P_MIN)
         return p
 
     def _nll(self, p):
