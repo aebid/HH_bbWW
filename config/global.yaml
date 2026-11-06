@@ -531,6 +531,16 @@ payload_producers:
 region: All
 region_default: SR
 custom_regions: QCDRegions
+
+# Window sets for window regions (FLAF Common/WindowRegions.py): a histTuple flavour's
+# `window_regions` makes regions <region>_<set>Win_m<MX>, the base region with the window of
+# mass MX on `variable`, per category as the definitions give it. The edges must be bin edges of
+# the variable's binning (histograms.yaml); the cut is made on its stored bin index.
+windows:
+  HME:
+    variable: DeepHME_mass
+    definitions: config/windows/hme_DL_v2610.yaml
+
 custom_categories: ""
 custom_subcategories: [ ]
 
@@ -1178,6 +1188,14 @@ histTuple_flavors:
   Signal_Extraction_DL:
     # DNN Outputs (Shapes)
     fullResolution_variables: [ ]
+
+    # The DL fit inputs in the frozen HME windows: DNN_M<MX>_Signal only in the windows of its
+    # own mass, in SR and both control regions (e.g. SR_HMEWin_m300/res2b/DNN_M300_Signal).
+    window_regions:
+      - window: HME
+        regions: [ SR, TT_CR, DY_CR ]
+        masses: all
+        vars: [ "DNN_M{MX}_Signal" ]
 
     variables:
       - DeepHME_mass
