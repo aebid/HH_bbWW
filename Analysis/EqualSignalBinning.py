@@ -733,9 +733,9 @@ class Binning:
     ):
         """Pull of the raw DY MC against its template in each final bin,
         (raw - template) / sqrt(raw MC variance + template band^2), into binning.json
-        (template_pulls); a warning when one is beyond dy_template.guard_sigma. A template that
-        is smooth but far from the MC it replaces in the bins that set the limit is biased
-        (e.g. a falling fit where the MC stays up), not a better estimate."""
+        (template_pulls); a warning when one is beyond dy_template.guard_sigma. The comparison is
+        in the final bins of this window, so a template that departs from its MC where the limit
+        is set shows up here."""
         t = self.dy_template
         proc = t["process"]
         tmpl, _ = summed(proc, "")
