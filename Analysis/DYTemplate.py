@@ -190,16 +190,21 @@ def tail_template(x, y, w2, deg=3, shift=1.0, merge=True):
     return tmpl, (tmpl + err, np.clip(tmpl - err, 0, None)), mask, True
 
 
-def fit_template(x, y, w2, deg=3, shift=1.0, merge=True):
-    """-> template, (up, down), ok. Fit-only: exp(poly2) below the tail start, the tail fit above."""
+def fit_template(x, y, w2, deg=3, shift=1.0, merge=True, core_rel=None):
+    """-> template, (up, down), ok. Fit-only: exp(poly2) below the tail start, the tail fit above.
+
+    core_rel: the band's relative size below the tail start; default the window's normalisation
+    statistics, 1 / sqrt(N_eff). A caller that renormalises the template to another yield (with
+    that yield's own statistics) passes 0, so the normalisation statistics are not counted twice.
+    """
     fits = _fits(x, y, w2, deg, shift, merge)
     if fits is None:
         return None, (None, None), False
     f2, f, mask, kp = fits
     tmpl = np.where(mask, f, f2)
-    err = _band(
-        x, y, w2, tmpl, mask, kp, merge, core_rel=1.0 / np.sqrt(max(_neff(y, w2), 1.0))
-    )
+    if core_rel is None:
+        core_rel = 1.0 / np.sqrt(max(_neff(y, w2), 1.0))
+    err = _band(x, y, w2, tmpl, mask, kp, merge, core_rel=core_rel)
     return tmpl, (tmpl + err, np.clip(tmpl - err, 0, None)), True
 
 

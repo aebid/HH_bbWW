@@ -237,8 +237,10 @@ class Binning:
                     p = self.build_processes(r, directory, lowmass, mass).get(proc)
                     if p:
                         y, w = y + p[""][0], w + p[""][1]
+            # the shape only: normalised below, and apply_template adds each channel's own yield
+            # statistics, so the pooled window's normalisation statistics stay out of the band
             tmpl, (up, down), ok = fit_template(
-                x, y, np.maximum(w, 0.0), **t.get("fit", {})
+                x, y, np.maximum(w, 0.0), core_rel=0.0, **t.get("fit", {})
             )
             if not ok:
                 raise RuntimeError(
@@ -328,21 +330,25 @@ class Binning:
                         zero,
                     )
         nuisance = f"_{t['nuisance']}_{channel}_{self.window_key(directory)}"
+        # a variation scales the template by varied / nominal window yield, summed over the eras
+        # that have the variation: one era's own ratio, with few heavy events, is noisy; an era's
+        # own nuisance (e.g. _2022) is still only that era's
+        ratio = {}
+        for s in set().union(*(set(per_era[e][proc]) for e in eras)) - {""}:
+            has = [e for e in eras if s in per_era[e][proc]]
+            nom = sum(float(per_era[e][proc][""][0].sum()) for e in has)
+            var = sum(float(per_era[e][proc][s][0].sum()) for e in has)
+            ratio[s] = max(var / nom, 0.0) if nom > 0 else 1.0
         for e in eras:
             share = by[e] / by_total if by_total > 0 else 1.0 / len(eras)
             shapes = per_era[e][proc]
-            nominal = float(shapes[""][0].sum())
             new = {}
             for s, (y, _) in shapes.items():
                 r = 1.0
                 if s in member_shift:
                     v = share * (total + member_shift[s])
                 else:
-                    r = (
-                        max(float(y.sum()) / nominal, 0.0)
-                        if (s and nominal > 0)
-                        else 1.0
-                    )
+                    r = ratio.get(s, 1.0) if s else 1.0
                     v = share * total * r
                 new[s] = (v, negligible(v) + share * raw_var * r * r)
             for direction, v in (("Up", up), ("Down", down)):
@@ -402,15 +408,15 @@ class Binning:
                     sum((p[1] for p in parts), zero),
                 )
             for unc, terms in self.member_uncs.items():
-                if any(m in members for m, _ in terms) and not any(
-                    m in mc_members for m, _ in terms
-                ):
-                    # a member uncertainty on the estimate alone: it enters through its factor
-                    for direction in ("Down", "Up"):
-                        shapes[f"_{unc}_{direction}"] = shapes[""]
-                    continue
+                if not any(m in self.members[proc] for m, _ in terms):
+                    continue  # not this process's uncertainty
                 terms = [(m, v) for m, v in terms if m in mc_members]
                 if not terms:
+                    # its members have no MC here (no events, dropped, or the low-mass
+                    # estimate alone, which enters through its factor): the variation is the
+                    # nominal, so a card declaring it in every category still finds it
+                    for direction in ("Down", "Up"):
+                        shapes[f"_{unc}_{direction}"] = shapes[""]
                     continue
                 for k, direction in ((0, "Down"), (1, "Up")):
                     y = shapes[""][0] + sum(v[k] * raw[m][0] for m, v in terms)
@@ -447,7 +453,9 @@ class Binning:
         the fine bins holding 1% and 99% of that process's yield in the window (eras summed). It is
         a variation of that process like any other, `<nuisance>_<jet category>`, so the gates and
         the writer treat it as such. It lets the binned control region's data / MC slope along the
-        score be absorbed there instead of pulling the shape nuisances it shares with the SR.
+        score be absorbed there instead of pulling the shape nuisances it shares with the SR. Each
+        tilted variation is rescaled to the nominal's window total (eras summed), so it moves the
+        shape only: the yield is the normalisations' (CMS_bbww_norm_*).
         """
         spec = self.cr_shapes.get(self.region(directory))
         if not spec:
@@ -456,7 +464,8 @@ class Binning:
         parts = [p[proc][""][0] for p in per_era.values() if proc in p]
         if not parts:
             return
-        c = np.cumsum(np.clip(sum(parts), 0.0, None))
+        total = sum(parts)
+        c = np.cumsum(np.clip(total, 0.0, None))
         if c[-1] <= 0:
             return
         lo = int(np.searchsorted(c, 0.01 * c[-1]))
@@ -464,12 +473,18 @@ class Binning:
         t = np.clip((np.arange(len(c)) - lo) / (hi - lo), 0.0, 1.0)
         tilt = float(spec["size"]) * (2.0 * t - 1.0)
         name = f"{spec['nuisance']}_{self.window_key(directory)}"
+        factors = {}
+        for sign, direction in ((1, "Up"), (-1, "Down")):
+            f = 1.0 + sign * tilt
+            tilted = float((total * f).sum())
+            factors[direction] = f * (
+                float(total.sum()) / tilted if tilted > 0 else 1.0
+            )
         for p in per_era.values():
             if proc not in p:
                 continue
             v, w = p[proc][""]
-            for sign, direction in ((1, "Up"), (-1, "Down")):
-                f = 1.0 + sign * tilt
+            for direction, f in factors.items():
                 p[proc][f"_{name}_{direction}"] = (v * f, w * f * f)
 
     def bin_window(self, mass, channel, category, directory, files):
