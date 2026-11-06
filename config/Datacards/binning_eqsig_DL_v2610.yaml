@@ -144,6 +144,11 @@ lowmass_dy:
 # guard_sigma: in every templated window the template is compared with the raw MC it replaces in
 # each final bin, pull = (raw - template) / sqrt(MC variance + band^2), written to binning.json
 # (template_pulls); a pull beyond guard_sigma is a warning.
+# Known (v2610 loose): eMu SR boosted warns at several masses (pulls to -4.3). Its fit-only template
+# sits above the raw MC (more DY, the conservative side). DY there is opposite-flavour DY->tautau,
+# <= ~1% of the background at low mass and 9-12% of tiny yields in the high-mass top bins.
+# Replacing it by the raw MC changes the limits by <= 0.6%, and MX 1500 by +2.3% (worse), so the
+# template is kept.
 dy_template:
   process: DY
   share_by: DY_M_50
