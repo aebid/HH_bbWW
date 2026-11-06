@@ -46,10 +46,17 @@ task shells out to for the band plots.
 tree it *reads*, so a re-binning or a re-fit does not require the input histograms to be
 reproduced under a new name.
 
-The datacard configuration is a set of *cards*, listed by name in the governor
-[`config/Datacards/x_hh_bbww_run3.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/x_hh_bbww_run3.yaml),
-which `StatInference.governor` in `config/global.yaml` selects (`StatInference.config`
-instead names a single card file). Each card — `DL_spin0`
+The datacard configuration is a set of *cards*, listed by name under `StatInference.cards`
+in `config/global.yaml` (`StatInference.config` instead names a single card file):
+
+```yaml
+StatInference:
+  cards:
+    DL_spin0: config/Datacards/DL/dl_spin0.yaml
+    DL_spin2: config/Datacards/DL/dl_spin2.yaml
+```
+
+Each card — `DL_spin0`
 ([`DL/dl_spin0.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/DL/dl_spin0.yaml))
 and `DL_spin2` (`DL/dl_spin2.yaml`) — declares the eras, channels, categories, mass points,
 processes and uncertainties; the chain reads them from there, not from `global.yaml`'s
