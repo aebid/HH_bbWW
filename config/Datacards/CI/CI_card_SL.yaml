@@ -25,7 +25,8 @@ input_categories:
 # the maker rebins, which leaves the rebinning out of what this card tests.
 hist_bins: [ 0.0, 1.0 ]
 processes:
-  # The one-lepton CI signal (custom_CI_Signal_SL); the two-lepton one is DL-only.
+  # The one-lepton CI signal (custom_CI_Signal expands to XtoHHto2B2W_1L_ and _2L_${MX});
+  # the two-lepton one is DL-only.
   - process: XtoHHto2B2W_1L_${MX}
     hist_name: XtoHHto2B2W_1L_${MX}
     param_values: [ 300 ]

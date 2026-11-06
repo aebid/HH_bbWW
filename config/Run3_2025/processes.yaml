@@ -570,18 +570,15 @@ custom_CI_Background_W:
   datasets:
     - WtoLNu_PTLNu_40to100_1J_amcatnloFXFX
 
+# The CI signal, both final states in one process so the CI's `--process custom_CI_Signal`
+# (cms-flaf/FLAF_ci) produces both. No XtoYH sample exists for 2024 (2025/26 reuse its MC),
+# so the HH samples stand in; the CI cards cover 2022-2023BPix only, so here the signal is
+# only plotted, the two samples together.
 custom_CI_Signal:
   name: "CI -- Signal"
   color: "kBlack"
   datasets:
     - GluGlutoHHto2B2Vto2L2Nu_kl_1p00_kt_1p00_c2_0p00
-
-# No XtoYH sample exists for 2024 (2025/26 reuse its MC), so the one-lepton HH sample
-# stands in, as the two-lepton one does for custom_CI_Signal.
-custom_CI_Signal_SL:
-  name: "CI -- Signal (1L)"
-  color: "kBlue"
-  datasets:
     - GluGlutoHHto2B2WtoLNu2Q_kl_1p00_kt_1p00_c2_0p00
 
 custom_CI_Data:
