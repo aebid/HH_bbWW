@@ -11,7 +11,8 @@ histTuple_flavor: CI
 
 QCDRegions:
   - OS_Iso
-  # The mass-independent single-lepton signal region, read by the CI_SL card.
+  # The mass-independent single-lepton signal region of the two-stage DNN. Produced and
+  # plotted; the CI_SL card reads the looser OS_Iso (see CI/CI_card_SL.yaml).
   - SR_SL
 
 StatInference:
@@ -19,8 +20,8 @@ StatInference:
   # They share CI_common.yaml through `include:`, so the CI also exercises the include merge.
   #   CI_DL: the double-lepton card, with the `preprocess:` step (rebin_2d.py, one bin per
   #          channel and category, per CI/CI_binning_2d.yaml)
-  #   CI_SL: the single-lepton card, read from the mass-independent SR_SL through its
-  #          input_categories; no preprocess step, it sets its own hist_bins
+  #   CI_SL: the single-lepton card, read from OS_Iso through its input_categories;
+  #          no preprocess step, it sets its own hist_bins
   # hist_bins is unset here, as in global.yaml.
   cards:
     CI_DL: config/Datacards/CI/CI_card_DL.yaml
