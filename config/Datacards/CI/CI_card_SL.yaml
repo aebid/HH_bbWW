@@ -9,16 +9,16 @@ model:
 channels:
   - e
   - mu
-# The single-lepton CI card: what it tests is the per-mass input categories. Each mass
-# hypothesis MX has its own signal region, SR_SL_M${MX} (the events its multiclass DNN
-# classifies as signal), and every file holds all of them; the datacard categories keep
-# one name and are read from the MX one. See x_hh_bbww_SL_run3.yaml.
+# The single-lepton CI card. Its signal region is the mass-independent SR_SL (the events
+# the two-stage DNN classifies as signal, cms-flaf/HH_bbWW#191); the datacard categories
+# keep their own names and are read from there through input_categories. (Before #191 each
+# mass had its own SR_SL_M${MX} and this mapping was per mass, StatInference#24.)
 categories:
   - SR/res2b
   - SR/recovery
 input_categories:
-  SR/res2b: SR_SL_M${MX}/res2b
-  SR/recovery: SR_SL_M${MX}/recovery
+  SR/res2b: SR_SL/res2b
+  SR/recovery: SR_SL/recovery
 
 # One bin per channel and category, for the reason CI_card_DL.yaml gives: at --test
 # statistics a per-bin distribution is mostly empty or negative. No preprocess step --

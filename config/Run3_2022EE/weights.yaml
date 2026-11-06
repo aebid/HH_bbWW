@@ -15,10 +15,10 @@ norm:
     name: EleID_TightIDIso_2022EE_{}
 
   SingleEleTrg:
-    expression: weight_lep1_TrgSF_singleEleWpTight_singleEle{scale}_rel * weight_lep2_TrgSF_singleEleWpTight_singleEle{scale}_rel * final_weight
+    expression: "(trgSF_lep == 2 ? weight_lep2_TrgSF_singleEleWpTight_singleEle{scale}_rel : trgSF_lep == 1 ? weight_lep1_TrgSF_singleEleWpTight_singleEle{scale}_rel : 1.0) * final_weight"
     name: SingleEleTrg_2022EE_{}
   SingleMuonTrg:
-    expression: weight_lep1_TrgSF_singleIsoMu_IsoMu24{scale}_rel * weight_lep2_TrgSF_singleIsoMu_IsoMu24{scale}_rel * final_weight
+    expression: "(trgSF_lep == 2 ? weight_lep2_TrgSF_singleIsoMu_IsoMu24{scale}_rel : trgSF_lep == 1 ? weight_lep1_TrgSF_singleIsoMu_IsoMu24{scale}_rel : 1.0) * final_weight"
     name: SingleMuonTrg_2022EE_{}
 
   bTagShape_lf:
@@ -83,6 +83,13 @@ norm:
   PS_FSR:
     expression: weight_base_fsr{scale}_rel * final_weight
     name: ps_fsr_{}
+
+  qcd_scale:
+    expression: weight_base_qcd_scale{scale}_rel * final_weight
+    name: QCDscale_shape_{process}_{}
+  pdf:
+    expression: weight_base_pdf{scale}_rel * final_weight
+    name: pdf_shape_{process}_{}
 
 shape:
   JER:

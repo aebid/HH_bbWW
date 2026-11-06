@@ -317,6 +317,9 @@ def load_th2(path, hist_path):
         f.Close()
         raise KeyError("Histogram '%s' not found in %s" % (hist_path, path))
     h.SetDirectory(0)
+    # PyROOT does not own what Get() returns; detached, the histogram would be owned
+    # by nobody, never freed
+    ROOT.SetOwnership(h, True)
     f.Close()
     return h
 

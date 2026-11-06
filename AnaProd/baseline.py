@@ -74,7 +74,10 @@ def selectHWW(df, selected_channels):
     )
     # Can lower pT to 5 later when applying the soft muon SFs
 
-    df = df.Define("Electron_iso", "Electron_mvaIso")
+    # The HWW candidate ranking (GetBestHWWCandidate) prefers the SMALLER leg isolation, as for
+    # the muon's relative isolation; the electron MVA isolation score is larger for more
+    # isolated electrons, so it enters with its sign flipped.
+    df = df.Define("Electron_iso", "-Electron_mvaIso")
     df = df.Define("Muon_iso", "Muon_pfRelIso04_all")
 
     cand_columns = []

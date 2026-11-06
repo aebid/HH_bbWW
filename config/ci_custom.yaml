@@ -11,16 +11,16 @@ histTuple_flavor: CI
 
 QCDRegions:
   - OS_Iso
-  # The single-lepton signal region of the MX=300 hypothesis, read by the CI_SL card.
-  - SR_SL_M300
+  # The mass-independent single-lepton signal region, read by the CI_SL card.
+  - SR_SL
 
 StatInference:
   # Both CI cards, each with its own datacards and limit, as the analysis lists its cards.
   # They share CI_common.yaml through `include:`, so the CI also exercises the include merge.
   #   CI_DL: the double-lepton card, with the `preprocess:` step (rebin_2d.py, one bin per
   #          channel and category, per CI/CI_binning_2d.yaml)
-  #   CI_SL: the single-lepton card, which exercises the per-mass input categories
-  #          (StatInference#24); no preprocess step, it sets its own hist_bins
+  #   CI_SL: the single-lepton card, read from the mass-independent SR_SL through its
+  #          input_categories; no preprocess step, it sets its own hist_bins
   # hist_bins is unset here, as in global.yaml.
   cards:
     CI_DL: config/Datacards/CI/CI_card_DL.yaml

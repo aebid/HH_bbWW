@@ -349,6 +349,24 @@ GluGluToRadion_bbWW_1L:
     - GluGlutoRadiontoHHto2B2Vto2B2JLNu_M_4500
     - GluGlutoRadiontoHHto2B2Vto2B2JLNu_M_5000
 
+# GluGluToRadion_bbWW_1L_DNN:
+#   name: "GluGluToRadion_bbWW_1L_DNN"
+#   color: "kBlack"
+#   is_meta_process: true
+#   meta_setup:
+#     dataset_name_pattern: GluGlutoRadiontoHHto2B2Vto2B2JLNu_M_(\d+)  # GluGlutoRadiontoHHto2B2Vto2B([^_]+)_M_(\d+)
+#     parameters: [ MASS ]
+#     # Plotted in the X->HH group of plot_process_groups (config/global.yaml), under the group's name
+#     # and the 2L sample's colour: name_pattern and plot_color do not reach the plots.
+#     process_name: GluGluToRadion_bbWW_1L_${MASS}
+#     name_pattern: "gg#rightarrowX#rightarrowbbWW 1 Lepton M_{X}=${MASS} GeV"
+#     to_plot:
+#       - [ '600' ]
+#     plot_color: [ "kGreen" ]
+#     channels: [ "e", "mu", "eE", "eMu", "muMu" ]
+#   datasets:
+#     - GluGlutoRadiontoHHto2B2Vto2B2JLNu_M_600
+
 GluGluToBulkGraviton_bbWW_2L:
   name: "GluGluToBulkGraviton_bbWW_2L"
   color: "kBlack"

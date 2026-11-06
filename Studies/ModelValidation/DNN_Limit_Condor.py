@@ -134,8 +134,12 @@ def RebinShape(file_name, mass=None):
             hname = f"m{mass}_{proc}_class0"
             h = f.Get(hname)
             if h and isinstance(h, ROOT.TH1):
+                # With TH1.AddDirectory(False), what Get(), Clone() and Rebin() return is
+                # in no directory and not owned by PyROOT: owned by nobody, never freed
+                ROOT.SetOwnership(h, True)
                 h_clone = h.Clone()  # work on a clone in memory
                 h_clone.SetDirectory(0)
+                ROOT.SetOwnership(h_clone, True)
                 hists.append(h_clone)
 
         print(
@@ -160,15 +164,18 @@ def RebinShape(file_name, mass=None):
             h_orig = f.Get(hname)
             if not h_orig or not isinstance(h_orig, ROOT.TH1):
                 continue
+            ROOT.SetOwnership(h_orig, True)
 
             # Clone original into memory, detach from file
             h_tmp = h_orig.Clone(hname + "_tmp")
             h_tmp.SetDirectory(0)
+            ROOT.SetOwnership(h_tmp, True)
 
             # Rebin to variable binning; this propagates errors correctly
             print(f"Rebinning proc {proc} at mass {mass} with bins {edges_arr}")
             h_reb = h_tmp.Rebin(nbins_new, hname + "_reb", edges_arr)
             h_reb.SetDirectory(0)
+            ROOT.SetOwnership(h_reb, True)
 
             # Delete all old versions from file, then write new
             f.Delete(hname + ";*")

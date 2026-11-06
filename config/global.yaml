@@ -158,6 +158,11 @@ corrections: &corrections_default
     processes: [ TT, custom_CI_Background_TT ]
     branch: genTop_pt
     parameterization: data_nlo
+  # PDF (103 members) and QCD scale (8 muR/muF points): their weights.yaml norm entries have one
+  # weight per member, and HistMerger writes every member histogram per physics-model process.
+  # The datacard step reduces them to Up/Down (Hessian with alpha_s; 7-point envelope). The
+  # members are self-normalised, so the *_shape_* nuisances are shape + acceptance only; the
+  # rates stay in the datacard lnN terms.
   pdf:
     stages: [ AnaTuple, AnaTupleMerge ]
     branch: LHEPdfWeight
@@ -328,19 +333,40 @@ payload_producers:
     cmssw_env: False
     awkward_based: True
     uproot_stepsize: '50MB'
-  # Unlike the parametric DNN above, this one carries a trained model per mass point
-  # (config/DNN/SingleLepton_IndependentMasses/<category>/*_nParity*_M<mass>.onnx), so its
-  # grid cannot be widened to the produced X->HH points before those models exist.
+  # One multiclass for all mass points, so the SL signal and control regions are
+  # mass-independent, and one binary parametrized by the resonance mass, evaluated at each
+  # of `masses` (config/DNN/SingleLepton_AllMassMulticlass_ParametricBinary/<category>/).
+  # The mass is fed as the last binary input column, which must be `mass_feature`.
   TwoStageDNN:
     producers_module_name: Analysis.DNN_Application
     producer_name: TwoStageDNNProducer
     DL: null
     SL:
-      version: SingleLepton_IndependentMasses
+      version: SingleLepton_AllMassMulticlass_ParametricBinary
       num_parities: 4
-      binary_name_pattern: binary_nParity{train_parity}_M{mass}.onnx
-      multiclass_name_pattern: multiclass_nParity{train_parity}_M{mass}.onnx
-      num_classes: 7
+      binary_name_pattern: parametric_binary_nParity{train_parity}.onnx
+      multiclass_name_pattern: multiclass_nParity{train_parity}.onnx
+      mass_feature: X_mass
+      # Per model: number of output nodes, what the model returns (type: logit |
+      # probability), the activation turning its logits into probabilities (softmax |
+      # sigmoid), and what the producer saves (save_as: logit | probability |
+      # recomputed_logit). recomputed_logit is log(p / (1 - p)) of every node, with p
+      # clipped to [logit_clip_eps, 1 - logit_clip_eps]; raw logits cannot be saved for a
+      # model returning probabilities. A binary model with 2 nodes also needs signal_node.
+      multiclass_output:
+        num_nodes: 7
+        type: logit
+        activation: softmax
+        save_as: probability
+      binary_output:
+        num_nodes: 2
+        type: logit
+        activation: softmax
+        signal_node: 1
+        save_as: logit
+      # recomputed_logit is bounded by +-log((1 - eps) / eps) = +-23.03 for 1e-10; the
+      # TwoStageDNN histogram ranges in config/plot/histograms.yaml (+-23.5) follow it.
+      logit_clip_eps: 1.0e-10
     class_names:
       - Signal
       - TT
@@ -350,104 +376,75 @@ payload_producers:
       - H
       - VV
     columns:
-      - M300_Signal
-      - M400_Signal
-      - M500_Signal
-      - M550_Signal
-      - M600_Signal
-      - M650_Signal
-      - M700_Signal
-      - M800_Signal
-      - M900_Signal
-      - M1000_Signal
+      - Signal
+      - TT
+      - ST
+      - WJets
+      - DY
+      - H
+      - VV
 
-      - M300_TT
-      - M400_TT
-      - M500_TT
-      - M550_TT
-      - M600_TT
-      - M650_TT
-      - M700_TT
-      - M800_TT
-      - M900_TT
-      - M1000_TT
-
-      - M300_DY
-      - M400_DY
-      - M500_DY
-      - M550_DY
-      - M600_DY
-      - M650_DY
-      - M700_DY
-      - M800_DY
-      - M900_DY
-      - M1000_DY
-
-      - M300_ST
-      - M400_ST
-      - M500_ST
-      - M550_ST
-      - M600_ST
-      - M650_ST
-      - M700_ST
-      - M800_ST
-      - M900_ST
-      - M1000_ST
-
-      - M300_WJets
-      - M400_WJets
-      - M500_WJets
-      - M550_WJets
-      - M600_WJets
-      - M650_WJets
-      - M700_WJets
-      - M800_WJets
-      - M900_WJets
-      - M1000_WJets
-
-      - M300_H
-      - M400_H
-      - M500_H
-      - M550_H
-      - M600_H
-      - M650_H
-      - M700_H
-      - M800_H
-      - M900_H
-      - M1000_H
-
-      - M300_VV
-      - M400_VV
-      - M500_VV
-      - M550_VV
-      - M600_VV
-      - M650_VV
-      - M700_VV
-      - M800_VV
-      - M900_VV
-      - M1000_VV
-
+      - M250_binary
+      - M260_binary
+      - M270_binary
+      - M280_binary
       - M300_binary
+      - M320_binary
+      - M350_binary
+      - M360_binary
       - M400_binary
+      - M450_binary
       - M500_binary
       - M550_binary
       - M600_binary
       - M650_binary
       - M700_binary
+      - M750_binary
       - M800_binary
+      - M850_binary
       - M900_binary
       - M1000_binary
+      - M1100_binary
+      - M1200_binary
+      - M1300_binary
+      - M1400_binary
+      - M1500_binary
+      - M1600_binary
+      - M1700_binary
+      - M1800_binary
+      - M1900_binary
+      - M2000_binary
     masses:
+      - 250
+      - 260
+      - 270
+      - 280
       - 300
+      - 320
+      - 350
+      - 360
       - 400
+      - 450
       - 500
       - 550
       - 600
       - 650
       - 700
+      - 750
       - 800
+      - 850
       - 900
       - 1000
+      - 1100
+      - 1200
+      - 1300
+      - 1400
+      - 1500
+      - 1600
+      - 1700
+      - 1800
+      - 1900
+      - 2000
     dependencies:
     n_cpus: 4
     max_runtime: 32.0
@@ -607,21 +604,6 @@ categories:
   # - baseline_boosted
   # - baseline_resolved
 
-# This is for SR/CR definitions using multiclass DNN in defineControlRegions
-# The per-mass SL signal regions below are built from the TwoStageDNN scores, so this
-# grid follows the trained two-stage models, not the produced X->HH mass points.
-masspoints:
-  - 300
-  - 400
-  - 500
-  - 550
-  - 600
-  - 650
-  - 700
-  - 800
-  - 900
-  - 1000
-
 QCDRegions:
   - OS_Iso
   - SR
@@ -632,82 +614,15 @@ QCDRegions:
 
   # SL signal and control regions
   # if you are running SL Hist*Task, you might want to uncomment these so that signal regions and SRs are created for the SL channel
-  # - SR_SL_M300
-  # - SR_SL_M400
-  # - SR_SL_M500
-  # - SR_SL_M550
-  # - SR_SL_M600
-  # - SR_SL_M650
-  # - SR_SL_M700
-  # - SR_SL_M800
-  # - SR_SL_M900
-  # - SR_SL_M1000
+  - SR_SL
+  # - CR_SL_TT
+  # - CR_SL_ST
+  # - CR_SL_WJets
+  # - CR_SL_DY
+  # - CR_SL_H
+  # - CR_SL_VV
 
-  # - CR_SL_TT_M300
-  # - CR_SL_TT_M400
-  # - CR_SL_TT_M500
-  # - CR_SL_TT_M550
-  # - CR_SL_TT_M600
-  # - CR_SL_TT_M650
-  # - CR_SL_TT_M700
-  # - CR_SL_TT_M800
-  # - CR_SL_TT_M900
-  # - CR_SL_TT_M1000
-
-  # - CR_SL_ST_M300
-  # - CR_SL_ST_M400
-  # - CR_SL_ST_M500
-  # - CR_SL_ST_M550
-  # - CR_SL_ST_M600
-  # - CR_SL_ST_M650
-  # - CR_SL_ST_M700
-  # - CR_SL_ST_M800
-  # - CR_SL_ST_M900
-  # - CR_SL_ST_M1000
-
-  # - CR_SL_WJets_M300
-  # - CR_SL_WJets_M400
-  # - CR_SL_WJets_M500
-  # - CR_SL_WJets_M550
-  # - CR_SL_WJets_M600
-  # - CR_SL_WJets_M650
-  # - CR_SL_WJets_M700
-  # - CR_SL_WJets_M800
-  # - CR_SL_WJets_M900
-  # - CR_SL_WJets_M1000
-
-  # - CR_SL_DY_M300
-  # - CR_SL_DY_M400
-  # - CR_SL_DY_M500
-  # - CR_SL_DY_M550
-  # - CR_SL_DY_M600
-  # - CR_SL_DY_M650
-  # - CR_SL_DY_M700
-  # - CR_SL_DY_M800
-  # - CR_SL_DY_M900
-  # - CR_SL_DY_M1000
-
-  # - CR_SL_H_M300
-  # - CR_SL_H_M400
-  # - CR_SL_H_M500
-  # - CR_SL_H_M550
-  # - CR_SL_H_M600
-  # - CR_SL_H_M650
-  # - CR_SL_H_M700
-  # - CR_SL_H_M800
-  # - CR_SL_H_M900
-  # - CR_SL_H_M1000
-
-  # - CR_SL_VV_M300
-  # - CR_SL_VV_M400
-  # - CR_SL_VV_M500
-  # - CR_SL_VV_M550
-  # - CR_SL_VV_M600
-  # - CR_SL_VV_M650
-  # - CR_SL_VV_M700
-  # - CR_SL_VV_M800
-  # - CR_SL_VV_M900
-  # - CR_SL_VV_M1000
+  - OS_AntiIso_SR
 
 histTuple_selectors:
   - QCDRegions
@@ -759,7 +674,7 @@ scales:
 deepTauVersion: 2p1
 met_type: "PuppiMET"
 
-histTuple_flavor: Control_Plots
+histTuple_flavor: binary_DNN_outputs
 
 # Clean up histTuple flavors: DNN_Training, Control_Plots, Signal_Extraction
 
@@ -768,21 +683,57 @@ histTuple_flavors:
     fullResolution_variables: [ ]
 
     variables:
+      - TwoStageDNN_M250_binary
+      - TwoStageDNN_M260_binary
+      - TwoStageDNN_M270_binary
+      - TwoStageDNN_M280_binary
       - TwoStageDNN_M300_binary
+      - TwoStageDNN_M320_binary
+      - TwoStageDNN_M350_binary
+      - TwoStageDNN_M360_binary
       - TwoStageDNN_M400_binary
+      - TwoStageDNN_M450_binary
       - TwoStageDNN_M500_binary
       - TwoStageDNN_M550_binary
       - TwoStageDNN_M600_binary
       - TwoStageDNN_M650_binary
       - TwoStageDNN_M700_binary
+      - TwoStageDNN_M750_binary
       - TwoStageDNN_M800_binary
+      - TwoStageDNN_M850_binary
       - TwoStageDNN_M900_binary
       - TwoStageDNN_M1000_binary
+      - TwoStageDNN_M1100_binary
+      - TwoStageDNN_M1200_binary
+      - TwoStageDNN_M1300_binary
+      - TwoStageDNN_M1400_binary
+      - TwoStageDNN_M1500_binary
+      - TwoStageDNN_M1600_binary
+      - TwoStageDNN_M1700_binary
+      - TwoStageDNN_M1800_binary
+      - TwoStageDNN_M1900_binary
+      - TwoStageDNN_M2000_binary
 
+      - name: binary_DNN_m250_vs_HME
+        vars: [ TwoStageDNN_M250_binary, DeepHME_mass ]
+      - name: binary_DNN_m260_vs_HME
+        vars: [ TwoStageDNN_M260_binary, DeepHME_mass ]
+      - name: binary_DNN_m270_vs_HME
+        vars: [ TwoStageDNN_M270_binary, DeepHME_mass ]
+      - name: binary_DNN_m280_vs_HME
+        vars: [ TwoStageDNN_M280_binary, DeepHME_mass ]
       - name: binary_DNN_m300_vs_HME
         vars: [ TwoStageDNN_M300_binary, DeepHME_mass ]
+      - name: binary_DNN_m320_vs_HME
+        vars: [ TwoStageDNN_M320_binary, DeepHME_mass ]
+      - name: binary_DNN_m350_vs_HME
+        vars: [ TwoStageDNN_M350_binary, DeepHME_mass ]
+      - name: binary_DNN_m360_vs_HME
+        vars: [ TwoStageDNN_M360_binary, DeepHME_mass ]
       - name: binary_DNN_m400_vs_HME
         vars: [ TwoStageDNN_M400_binary, DeepHME_mass ]
+      - name: binary_DNN_m450_vs_HME
+        vars: [ TwoStageDNN_M450_binary, DeepHME_mass ]
       - name: binary_DNN_m500_vs_HME
         vars: [ TwoStageDNN_M500_binary, DeepHME_mass ]
       - name: binary_DNN_m550_vs_HME
@@ -793,12 +744,36 @@ histTuple_flavors:
         vars: [ TwoStageDNN_M650_binary, DeepHME_mass ]
       - name: binary_DNN_m700_vs_HME
         vars: [ TwoStageDNN_M700_binary, DeepHME_mass ]
+      - name: binary_DNN_m750_vs_HME
+        vars: [ TwoStageDNN_M750_binary, DeepHME_mass ]
       - name: binary_DNN_m800_vs_HME
         vars: [ TwoStageDNN_M800_binary, DeepHME_mass ]
+      - name: binary_DNN_m850_vs_HME
+        vars: [ TwoStageDNN_M850_binary, DeepHME_mass ]
       - name: binary_DNN_m900_vs_HME
         vars: [ TwoStageDNN_M900_binary, DeepHME_mass ]
       - name: binary_DNN_m1000_vs_HME
         vars: [ TwoStageDNN_M1000_binary, DeepHME_mass ]
+      - name: binary_DNN_m1100_vs_HME
+        vars: [ TwoStageDNN_M1100_binary, DeepHME_mass ]
+      - name: binary_DNN_m1200_vs_HME
+        vars: [ TwoStageDNN_M1200_binary, DeepHME_mass ]
+      - name: binary_DNN_m1300_vs_HME
+        vars: [ TwoStageDNN_M1300_binary, DeepHME_mass ]
+      - name: binary_DNN_m1400_vs_HME
+        vars: [ TwoStageDNN_M1400_binary, DeepHME_mass ]
+      - name: binary_DNN_m1500_vs_HME
+        vars: [ TwoStageDNN_M1500_binary, DeepHME_mass ]
+      - name: binary_DNN_m1600_vs_HME
+        vars: [ TwoStageDNN_M1600_binary, DeepHME_mass ]
+      - name: binary_DNN_m1700_vs_HME
+        vars: [ TwoStageDNN_M1700_binary, DeepHME_mass ]
+      - name: binary_DNN_m1800_vs_HME
+        vars: [ TwoStageDNN_M1800_binary, DeepHME_mass ]
+      - name: binary_DNN_m1900_vs_HME
+        vars: [ TwoStageDNN_M1900_binary, DeepHME_mass ]
+      - name: binary_DNN_m2000_vs_HME
+        vars: [ TwoStageDNN_M2000_binary, DeepHME_mass ]
 
   DNN_Training:
     fullResolution_variables:
@@ -1369,98 +1344,65 @@ histTuple_flavors:
     variables:
       # - DeepHME_mass
 
+      - TwoStageDNN_M250_binary
+      - TwoStageDNN_M260_binary
+      - TwoStageDNN_M270_binary
+      - TwoStageDNN_M280_binary
       - TwoStageDNN_M300_binary
+      - TwoStageDNN_M320_binary
+      - TwoStageDNN_M350_binary
+      - TwoStageDNN_M360_binary
       - TwoStageDNN_M400_binary
+      - TwoStageDNN_M450_binary
       - TwoStageDNN_M500_binary
       - TwoStageDNN_M550_binary
       - TwoStageDNN_M600_binary
       - TwoStageDNN_M650_binary
       - TwoStageDNN_M700_binary
+      - TwoStageDNN_M750_binary
       - TwoStageDNN_M800_binary
+      - TwoStageDNN_M850_binary
       - TwoStageDNN_M900_binary
       - TwoStageDNN_M1000_binary
+      - TwoStageDNN_M1100_binary
+      - TwoStageDNN_M1200_binary
+      - TwoStageDNN_M1300_binary
+      - TwoStageDNN_M1400_binary
+      - TwoStageDNN_M1500_binary
+      - TwoStageDNN_M1600_binary
+      - TwoStageDNN_M1700_binary
+      - TwoStageDNN_M1800_binary
+      - TwoStageDNN_M1900_binary
+      - TwoStageDNN_M2000_binary
 
-      # - TwoStageDNN_M300_Signal
-      # - TwoStageDNN_M400_Signal
-      # - TwoStageDNN_M500_Signal
-      # - TwoStageDNN_M550_Signal
-      # - TwoStageDNN_M600_Signal
-      # - TwoStageDNN_M650_Signal
-      # - TwoStageDNN_M700_Signal
-      # - TwoStageDNN_M800_Signal
-      # - TwoStageDNN_M900_Signal
-      # - TwoStageDNN_M1000_Signal
+      # - TwoStageDNN_Signal
+      # - TwoStageDNN_TT
+      # - TwoStageDNN_ST
+      # - TwoStageDNN_WJets
+      # - TwoStageDNN_DY
+      # - TwoStageDNN_H
+      # - TwoStageDNN_VV
 
-      # - TwoStageDNN_M300_TT
-      # - TwoStageDNN_M400_TT
-      # - TwoStageDNN_M500_TT
-      # - TwoStageDNN_M550_TT
-      # - TwoStageDNN_M600_TT
-      # - TwoStageDNN_M650_TT
-      # - TwoStageDNN_M700_TT
-      # - TwoStageDNN_M800_TT
-      # - TwoStageDNN_M900_TT
-      # - TwoStageDNN_M1000_TT
-
-      # - TwoStageDNN_M300_ST
-      # - TwoStageDNN_M400_ST
-      # - TwoStageDNN_M500_ST
-      # - TwoStageDNN_M550_ST
-      # - TwoStageDNN_M600_ST
-      # - TwoStageDNN_M650_ST
-      # - TwoStageDNN_M700_ST
-      # - TwoStageDNN_M800_ST
-      # - TwoStageDNN_M900_ST
-      # - TwoStageDNN_M1000_ST
-
-      # - TwoStageDNN_M300_DY
-      # - TwoStageDNN_M400_DY
-      # - TwoStageDNN_M500_DY
-      # - TwoStageDNN_M550_DY
-      # - TwoStageDNN_M600_DY
-      # - TwoStageDNN_M650_DY
-      # - TwoStageDNN_M700_DY
-      # - TwoStageDNN_M800_DY
-      # - TwoStageDNN_M900_DY
-      # - TwoStageDNN_M1000_DY
-
-      # - TwoStageDNN_M300_WJets
-      # - TwoStageDNN_M400_WJets
-      # - TwoStageDNN_M500_WJets
-      # - TwoStageDNN_M550_WJets
-      # - TwoStageDNN_M600_WJets
-      # - TwoStageDNN_M650_WJets
-      # - TwoStageDNN_M700_WJets
-      # - TwoStageDNN_M800_WJets
-      # - TwoStageDNN_M900_WJets
-      # - TwoStageDNN_M1000_WJets
-
-      # - TwoStageDNN_M300_H
-      # - TwoStageDNN_M400_H
-      # - TwoStageDNN_M500_H
-      # - TwoStageDNN_M550_H
-      # - TwoStageDNN_M600_H
-      # - TwoStageDNN_M650_H
-      # - TwoStageDNN_M700_H
-      # - TwoStageDNN_M800_H
-      # - TwoStageDNN_M900_H
-      # - TwoStageDNN_M1000_H
-
-      # - TwoStageDNN_M300_VV
-      # - TwoStageDNN_M400_VV
-      # - TwoStageDNN_M500_VV
-      # - TwoStageDNN_M550_VV
-      # - TwoStageDNN_M600_VV
-      # - TwoStageDNN_M650_VV
-      # - TwoStageDNN_M700_VV
-      # - TwoStageDNN_M800_VV
-      # - TwoStageDNN_M900_VV
-      # - TwoStageDNN_M1000_VV
-
+      # - name: binary_DNN_m250_vs_HME
+      #   vars: [ TwoStageDNN_M250_binary, DeepHME_mass ]
+      # - name: binary_DNN_m260_vs_HME
+      #   vars: [ TwoStageDNN_M260_binary, DeepHME_mass ]
+      # - name: binary_DNN_m270_vs_HME
+      #   vars: [ TwoStageDNN_M270_binary, DeepHME_mass ]
+      # - name: binary_DNN_m280_vs_HME
+      #   vars: [ TwoStageDNN_M280_binary, DeepHME_mass ]
       # - name: binary_DNN_m300_vs_HME
       #   vars: [ TwoStageDNN_M300_binary, DeepHME_mass ]
+      # - name: binary_DNN_m320_vs_HME
+      #   vars: [ TwoStageDNN_M320_binary, DeepHME_mass ]
+      # - name: binary_DNN_m350_vs_HME
+      #   vars: [ TwoStageDNN_M350_binary, DeepHME_mass ]
+      # - name: binary_DNN_m360_vs_HME
+      #   vars: [ TwoStageDNN_M360_binary, DeepHME_mass ]
       # - name: binary_DNN_m400_vs_HME
       #   vars: [ TwoStageDNN_M400_binary, DeepHME_mass ]
+      # - name: binary_DNN_m450_vs_HME
+      #   vars: [ TwoStageDNN_M450_binary, DeepHME_mass ]
       # - name: binary_DNN_m500_vs_HME
       #   vars: [ TwoStageDNN_M500_binary, DeepHME_mass ]
       # - name: binary_DNN_m550_vs_HME
@@ -1471,12 +1413,36 @@ histTuple_flavors:
       #   vars: [ TwoStageDNN_M650_binary, DeepHME_mass ]
       # - name: binary_DNN_m700_vs_HME
       #   vars: [ TwoStageDNN_M700_binary, DeepHME_mass ]
+      # - name: binary_DNN_m750_vs_HME
+      #   vars: [ TwoStageDNN_M750_binary, DeepHME_mass ]
       # - name: binary_DNN_m800_vs_HME
       #   vars: [ TwoStageDNN_M800_binary, DeepHME_mass ]
+      # - name: binary_DNN_m850_vs_HME
+      #   vars: [ TwoStageDNN_M850_binary, DeepHME_mass ]
       # - name: binary_DNN_m900_vs_HME
       #   vars: [ TwoStageDNN_M900_binary, DeepHME_mass ]
       # - name: binary_DNN_m1000_vs_HME
       #   vars: [ TwoStageDNN_M1000_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1100_vs_HME
+      #   vars: [ TwoStageDNN_M1100_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1200_vs_HME
+      #   vars: [ TwoStageDNN_M1200_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1300_vs_HME
+      #   vars: [ TwoStageDNN_M1300_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1400_vs_HME
+      #   vars: [ TwoStageDNN_M1400_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1500_vs_HME
+      #   vars: [ TwoStageDNN_M1500_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1600_vs_HME
+      #   vars: [ TwoStageDNN_M1600_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1700_vs_HME
+      #   vars: [ TwoStageDNN_M1700_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1800_vs_HME
+      #   vars: [ TwoStageDNN_M1800_binary, DeepHME_mass ]
+      # - name: binary_DNN_m1900_vs_HME
+      #   vars: [ TwoStageDNN_M1900_binary, DeepHME_mass ]
+      # - name: binary_DNN_m2000_vs_HME
+      #   vars: [ TwoStageDNN_M2000_binary, DeepHME_mass ]
 
 StatInference:
   # The cards to build, by name: each gets its own datacards, limits and plots, under

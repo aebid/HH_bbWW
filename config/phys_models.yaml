@@ -67,12 +67,12 @@ TestModel:
   data:
     - custom_CI_Data
 
-DNNTest_Model:
-  name: "Model two stage dnn test"
-  backgrounds: [ ]
-  signals:
-    - XtoHHto2B2W_SingleLepton_DNN
-  data: [ ]
+# DNNTest_Model:
+#   name: "Model two stage dnn test"
+#   backgrounds: [ ]
+#   signals:
+#     - GluGluToRadion_bbWW_1L_DNN
+#   data: [ ]
 
 DNNTraining_Model:
   name: "Base model for Run 3"

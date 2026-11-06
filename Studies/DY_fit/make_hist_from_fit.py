@@ -109,6 +109,9 @@ def _load_ref_th2(root_file, hist_path):
             % (hist_path, root_file)
         )
     h.SetDirectory(0)
+    # PyROOT does not own what Get() returns; detached, the histogram would be owned
+    # by nobody, never freed
+    ROOT.SetOwnership(h, True)
     f.Close()
     return h
 
@@ -169,6 +172,9 @@ def fill_th2(name, title, x_edges, y_edges, Z, Zerr=None):
     ny = len(y_edges) - 1
     h = ROOT.TH2D(name, title, nx, x_edges.astype(float), ny, y_edges.astype(float))
     h.SetDirectory(0)
+    # main() runs this with a directory of the output file current, which then owns the
+    # new histogram, not PyROOT; detached, it would be owned by nobody, never freed
+    ROOT.SetOwnership(h, True)
     for ix in range(nx):
         for iy in range(ny):
             h.SetBinContent(ix + 1, iy + 1, float(Z[ix, iy]))

@@ -75,17 +75,62 @@ Two networks consume that grid, and they do not cover the same part of it:
 
 - the **dilepton DNN** is parametric — one model per fold, evaluated at whatever masses
   `DNN.columns` in `config/global.yaml` asks for. It is configured over the produced points up to
-  1.5 TeV, and the datacard `param_values` in `config/Datacards/x_hh_bbww_{DL,SL}_run3.yaml` follow
+  1.5 TeV, and the datacard `param_values` in `config/Datacards/x_hh_bbww_DL_run3.yaml` follow
   the same 25 points. The four lowest of them, 250 to 280 GeV, are below the lowest
   `signal_mass_points` of the models currently in `config/DNN/DoubleLepton_Parametric_*_v1`, so
   those scores extrapolate and stay provisional until the network is retrained over this grid.
-- the **single-lepton two-stage DNN** carries one trained model per mass point in
-  `config/DNN/SingleLepton_IndependentMasses/`, so its grid, and the `masspoints:` list of SL signal
-  regions built from its scores, stay at the ten points those models were trained for until
-  retrained ones exist.
+- the **single-lepton two-stage DNN** has a binary stage that is parametric too, evaluated at the
+  `TwoStageDNN.masses` in `config/global.yaml`: the 30 produced points from 250 GeV to 2 TeV. Its
+  multiclass stage does not depend on the mass, so neither do the SL signal and control regions
+  (see [below](#single-lepton-two-stage-dnn)). The SL datacard
+  (`config/Datacards/x_hh_bbww_SL_run3.yaml`) has not followed yet: it still reads the per-mass
+  regions `SR_SL_M${MX}` that no longer exist, at ten masses from 300 GeV to 1 TeV.
 
 Every mass point named in a `variables:` list also needs its binning in `config/plot/histograms.yaml`
 — a variable with no matching entry there stops `HistProducerFromNTuple` with a `KeyError`.
+
+## Single-lepton two-stage DNN
+
+The `TwoStageDNN` payload producer (`TwoStageDNNProducer` in `Analysis/DNN_Application.py`,
+configured under `payload_producers` in `config/global.yaml`) applies two networks per category
+(boosted, resolved) and fold. The models and their feature lists are in
+`config/DNN/SingleLepton_AllMassMulticlass_ParametricBinary/`: `<category>/multiclass_nParity<p>.onnx`
+and `<category>/parametric_binary_nParity<p>.onnx`, next to `{multiclass,binary}_<category>_dnn_config.yaml`.
+Model `p` is applied to the events with `event % 4 == (p + 3) % 4`.
+
+1. **Multiclass**, one model for all masses. Its 7 outputs, in the order of `class_names` (Signal,
+   TT, ST, WJets, DY, H, VV), are stored as `TwoStageDNN_<class>`. In `Analysis/hh_bbww.py` the
+   class with the highest score selects the SL region: `SR_SL` for Signal, `CR_SL_<class>` for the
+   others. The regions are built only when one of them is in `QCDRegions`.
+2. **Binary**, parametrized by the resonance mass, which is the **last** input column. The producer
+   evaluates it at each of `TwoStageDNN.masses`, filling that column with the hypothesis mass in
+   GeV (the input normalization is part of the ONNX graph), and stores `TwoStageDNN_M<mass>_binary`.
+   The last entry of the binary feature list must be `mass_feature` (`X_mass`), or the producer
+   stops; the `X_mass` branch of the event is not read.
+
+What the models return and what is stored is configured per network in `multiclass_output` and
+`binary_output`:
+
+| Key | Meaning |
+|---|---|
+| `num_nodes` | number of model outputs, checked when the model runs (7 multiclass, 2 binary) |
+| `type` | what the model returns: `logit` or `probability` |
+| `activation` | what turns its logits into probabilities: `softmax` or `sigmoid` |
+| `save_as` | what is stored: `logit` (raw), `probability`, or `recomputed_logit` |
+| `signal_node` | binary model with more than one output: the signal output (1; 0 is background) |
+
+The current models return raw logits. Both networks store `recomputed_logit`: log(p / (1 − p)) of
+the softmax probability of each output, with p clipped to [`logit_clip_eps`, 1 − `logit_clip_eps`].
+For the 2-output binary model this is the logit difference z<sub>1</sub> − z<sub>0</sub>. The raw
+signal logit z<sub>1</sub> alone has no absolute scale: softmax does not change when the same
+constant is added to both outputs. With `logit_clip_eps: 1.0e-10` every stored score is within
+±23.03, and the TwoStageDNN entries of `config/plot/histograms.yaml` use the range [−23.5, 23.5]
+(94 bins in 1D, 47 on the DNN axis of the plots against DeepHME). The range has to contain the
+bound strictly, as plots drop the overflow; changing `logit_clip_eps` means changing it too.
+Storing raw logits cannot be configured for a model that returns probabilities.
+
+An event that no fold scores stops the producer. A non-finite model output only prints a warning,
+with the event numbers, and is stored as it is.
 
 ## Columns taken from the central tree
 

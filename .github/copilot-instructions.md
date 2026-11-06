@@ -143,7 +143,7 @@ Where it goes:
 
 ## Repository facts
 
-Verified 2026-10-23; re-check before relying on any of it.
+Verified 2026-10-23 (Tests row 2026-10-29); re-check before relying on any of it.
 
 | | |
 |---|---|
@@ -152,7 +152,7 @@ Verified 2026-10-23; re-check before relying on any of it.
 | Eras | Run 3: 2022, 2022EE, 2023, 2023BPix, 2024, 2025, 2026 |
 | Configs | `config/global.yaml`, `config/processes.yaml` (processor anchors), `config/phys_models.yaml`, `config/<era>/{datasets,processes}.yaml`, `config/Datacards/` (the cards listed in `global.yaml`'s `StatInference.cards`: `DL/dl_spin{0,2}.yaml` including `DL/dl_common.yaml`; `x_hh_bbww_SL_run3.yaml`; CI: `CI/CI_card_{DL,SL}.yaml` including `CI/CI_common.yaml`) |
 | Large files | DNN `.onnx` payloads are tracked with Git LFS; never commit a binary directly |
-| Tests | `test/test_plot_config.py`: the control-plot configuration, checked through FLAF's plot rules (`FLAF/Common/PlotGroups.py`) in every era, the Run3_22_23 meta-era and both DY models, without ROOT. A `test/test_*.py` added here runs in `unit-tests` without a workflow change (FLAF's reusable workflow, against the pinned FLAF); a test that needs ROOT, CVMFS or a grid proxy carries the `needs_root`/`needs_cvmfs`/`needs_proxy` marker, and a ROOT stand-in is withdrawn after the import it serves (FLAF's `docs/contributing.md`, Unit tests). Otherwise validation is the integration test and physics checks; the framework's suites live in `FLAF/test/` |
+| Tests | `test/test_plot_config.py`: the control-plot configuration, checked through FLAF's plot rules (`FLAF/Common/PlotGroups.py`) in every era, the Run3_22_23 meta-era and both DY models, without ROOT; `test/test_studies_hist_ownership.py` (`needs_root`, so run locally after `source env.sh`): the `Studies/DY_fit` and `Studies/ModelValidation` functions free the histograms they read, clone, rebin or project. A `test/test_*.py` added here runs in `unit-tests` without a workflow change (FLAF's reusable workflow, against the pinned FLAF); a test that needs ROOT, CVMFS or a grid proxy carries the `needs_root`/`needs_cvmfs`/`needs_proxy` marker, and a ROOT stand-in is withdrawn after the import it serves (FLAF's `docs/contributing.md`, Unit tests). Otherwise validation is the integration test and physics checks; the framework's suites live in `FLAF/test/` |
 | Workflows | `formatting-check`, `unit-tests` (FLAF's, over `test/` with the pinned FLAF, `test/test_plot_config.py` included), `repo-sanity-checks` (FLAF's sanity checks and FLAF's `run_tools/check_era_rename.py` for leftovers of the `period` → `era` rename), `test-setup-loading`, `test-era-dimension` (FLAF's `test/test_era_dimension.py` over the seven Run 3 eras: every stage built over all eras at once and taken through what the scheduler does before anything runs, and the settings that must agree between eras), `deploy-docs`, `trigger-flaf-integration`. Formatting, era loading, the multi-era construction and the control-plot configuration are checked automatically — do not comment on them |
 | Integration test | Triggered by `@cms-flaf-bot please test`; its configuration lives in `cms-flaf/FLAF_ci`, **not** in this repo. There is no `.github/integration_cfg.yaml` here |
 | Docs | `docs/`, plus the shared framework docs in `FLAF/docs/` |

@@ -54,6 +54,9 @@ def hadd_parity_files(
                     )
                     hist = hist_list[-1]
                     hist.SetDirectory(0)  # Detach the histogram from the file
+                    # PyROOT does not own what Clone() returns; detached, the copy would
+                    # be owned by nobody, never freed
+                    ROOT.SetOwnership(hist, True)
                     if hist is None:
                         print(
                             f"Histogram {histname.format(mass=mass, proc=proc)} not found in file {file_name}, skipping."
@@ -68,6 +71,7 @@ def hadd_parity_files(
                     )
                     hist = hist_list[-1]
                     hist.SetDirectory(0)  # Detach the histogram from the file
+                    ROOT.SetOwnership(hist, True)
                     if hist is None:
                         print(
                             f"Histogram {histname.format(mass=mass, proc=proc)} not found in file {file_name}, skipping."

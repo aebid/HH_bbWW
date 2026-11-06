@@ -526,6 +526,9 @@ def _project_hme(
     # ROOT bins are 1-based
     proj = h2.ProjectionY(name, ix_lo + 1, ix_hi + 1, "e")
     proj.SetDirectory(0)
+    # PyROOT does not own what ProjectionY() returns; detached, the projection would be
+    # owned by nobody, never freed
+    ROOT.SetOwnership(proj, True)
     return proj
 
 

@@ -526,6 +526,104 @@ def onnx_session(path):
         gc.collect()
 
 
+def softmax(logits):
+    shifted = logits - np.max(logits, axis=1, keepdims=True)
+    exp = np.exp(shifted)
+    return exp / np.sum(exp, axis=1, keepdims=True)
+
+
+def sigmoid(logits):
+    # exp overflows to inf for very negative logits, which correctly gives 0
+    with np.errstate(over="ignore"):
+        return 1.0 / (1.0 + np.exp(-logits))
+
+
+# what a model returns, what the producer saves, and how logits become probabilities
+DNN_OUTPUT_TYPES = ["logit", "probability"]
+DNN_SAVE_TYPES = ["logit", "probability", "recomputed_logit"]
+DNN_ACTIVATIONS = {"softmax": softmax, "sigmoid": sigmoid}
+
+
+def parse_output_spec(label, spec, needs_signal_node):
+    """
+    Validates the output description of one model:
+    num_nodes, type (logit | probability), activation (softmax | sigmoid),
+    save_as (logit | probability | recomputed_logit) and, for the binary model
+    with more than one node, signal_node.
+    """
+    if spec is None:
+        raise RuntimeError(f"{label}: output specification is missing.")
+    for key in ["num_nodes", "type", "activation", "save_as"]:
+        if key not in spec:
+            raise RuntimeError(f"{label}: output specification has no '{key}'.")
+
+    num_nodes = spec["num_nodes"]
+    if isinstance(num_nodes, bool) or not isinstance(num_nodes, int) or num_nodes < 1:
+        raise RuntimeError(f"{label}: num_nodes must be a positive integer.")
+    if spec["type"] not in DNN_OUTPUT_TYPES:
+        raise RuntimeError(f"{label}: type must be one of {DNN_OUTPUT_TYPES}.")
+    if spec["save_as"] not in DNN_SAVE_TYPES:
+        raise RuntimeError(f"{label}: save_as must be one of {DNN_SAVE_TYPES}.")
+    if spec["activation"] not in DNN_ACTIVATIONS:
+        raise RuntimeError(
+            f"{label}: activation must be one of {list(DNN_ACTIVATIONS)}."
+        )
+    if spec["activation"] == "softmax" and num_nodes < 2:
+        raise RuntimeError(f"{label}: softmax needs at least 2 output nodes.")
+    if spec["type"] == "probability" and spec["save_as"] == "logit":
+        raise RuntimeError(
+            f"{label}: the model returns probabilities, its raw logits cannot be "
+            "saved. Use save_as: recomputed_logit."
+        )
+
+    parsed = dict(spec)
+    if needs_signal_node:
+        if num_nodes == 1:
+            parsed["signal_node"] = spec.get("signal_node", 0)
+        elif "signal_node" not in spec:
+            raise RuntimeError(
+                f"{label}: signal_node is required for {num_nodes} output nodes."
+            )
+        if not 0 <= parsed["signal_node"] < num_nodes:
+            raise RuntimeError(f"{label}: signal_node is out of range.")
+    return parsed
+
+
+def convert_dnn_output(scores, spec, clip_eps):
+    """
+    Converts the model output (spec["type"]) to the saved type (spec["save_as"]).
+    recomputed_logit is log(p / (1 - p)) of every node, p clipped to
+    [clip_eps, 1 - clip_eps].
+    """
+    scores = scores.astype(np.float64)
+    if spec["save_as"] == spec["type"]:
+        return scores
+
+    if spec["type"] == "logit":
+        probabilities = DNN_ACTIVATIONS[spec["activation"]](scores)
+    else:
+        probabilities = scores
+
+    if spec["save_as"] == "probability":
+        return probabilities
+
+    clipped = np.clip(probabilities, clip_eps, 1.0 - clip_eps)
+    return np.log(clipped / (1.0 - clipped))
+
+
+def model_output(sess, inputs, spec, label):
+    """Runs the model and checks that its output has spec["num_nodes"] columns."""
+    sess_in = sess.get_inputs()[0].name
+    scores = sess.run(None, {sess_in: inputs})[0]
+    scores = scores.reshape(len(scores), -1)
+    if scores.shape[1] != spec["num_nodes"]:
+        raise RuntimeError(
+            f"{label}: model returned {scores.shape[1]} output node(s), "
+            f"num_nodes is {spec['num_nodes']}."
+        )
+    return scores
+
+
 class TwoStageDNNProducer:
     def __init__(self, cfg, payload_name, era):
         self.cfg = cfg
@@ -550,17 +648,49 @@ class TwoStageDNNProducer:
         self.dnn_configs = {}
         # channel -> category -> models directory
         self.models_folders = {}
+        # channel -> {"multiclass": spec, "binary": spec} and clipping for logits
+        self.output_specs = {}
+        self.logit_clip_eps = {}
 
         for channel, specs in self.channel_dnn_specs.items():
             if specs is None:
                 print(f"Channel {channel} does not have DNN defined, skip.")
                 continue
 
-            parametric = specs.get("parametric", False)
-            if parametric:
-                raise NotImplementedError(
-                    "Parametric two-stage DNN inference has not been implemented."
+            # one mass-independent multiclass and one binary parametrized by the
+            # resonance mass per parity, so the model names carry no mass
+            for pattern_key in ["binary_name_pattern", "multiclass_name_pattern"]:
+                if "{mass}" in specs[pattern_key]:
+                    raise RuntimeError(
+                        f"{channel}: {pattern_key} '{specs[pattern_key]}' contains "
+                        "{mass}. Models per mass point are no longer supported."
+                    )
+
+            mass_feature = specs["mass_feature"]
+
+            self.output_specs[channel] = {
+                "multiclass": parse_output_spec(
+                    f"{channel}/multiclass_output",
+                    specs.get("multiclass_output"),
+                    needs_signal_node=False,
+                ),
+                "binary": parse_output_spec(
+                    f"{channel}/binary_output",
+                    specs.get("binary_output"),
+                    needs_signal_node=True,
+                ),
+            }
+            num_classes = self.output_specs[channel]["multiclass"]["num_nodes"]
+            if num_classes != len(self.cfg["class_names"]):
+                raise RuntimeError(
+                    f"{channel}: multiclass_output num_nodes ({num_classes}) does not "
+                    f"match the {len(self.cfg['class_names'])} class_names."
                 )
+
+            clip_eps = float(specs.get("logit_clip_eps", 1e-7))
+            if not 0.0 < clip_eps < 0.5:
+                raise RuntimeError(f"{channel}: logit_clip_eps must be in (0, 0.5).")
+            self.logit_clip_eps[channel] = clip_eps
 
             base_folder = os.path.join(
                 os.environ["ANALYSIS_PATH"], "config", "DNN", specs["version"]
@@ -590,9 +720,18 @@ class TwoStageDNNProducer:
                         f
                     )
 
-                load_features.update(
-                    self.dnn_configs[channel][category]["binary"]["features"]
-                )
+                # the mass hypothesis is fed as the last column of the binary inputs
+                binary_features = self.dnn_configs[channel][category]["binary"][
+                    "features"
+                ]
+                if not binary_features or binary_features[-1] != mass_feature:
+                    raise RuntimeError(
+                        f"{channel}/{category}: mass feature '{mass_feature}' must be "
+                        f"the last binary feature in {binary_cfg_path}."
+                    )
+
+                # the mass column is filled per hypothesis, the X_mass branch is never read
+                load_features.update(binary_features[:-1])
                 load_features.update(
                     self.dnn_configs[channel][category]["multiclass"]["features"]
                 )
@@ -645,7 +784,11 @@ class TwoStageDNNProducer:
                 continue
 
             num_parities = specs["num_parities"]
-            num_classes = specs["num_classes"]
+            multiclass_spec = self.output_specs[channel]["multiclass"]
+            binary_spec = self.output_specs[channel]["binary"]
+            num_classes = multiclass_spec["num_nodes"]
+            signal_node = binary_spec["signal_node"]
+            clip_eps = self.logit_clip_eps[channel]
             num_events = len(branches)
             event_id = np.asarray(branches.event, dtype=np.int64)
 
@@ -662,15 +805,19 @@ class TwoStageDNNProducer:
                     "multiclass"
                 ]["features"]
 
-                reuse_inputs = binary_feature_list == multiclass_feature_list
+                # the last binary feature is the mass, which is overwritten with each
+                # hypothesis below; the stored value is never fed to the model
+                binary_event_features = binary_feature_list[:-1]
 
-                # union of all features actually fed to either model
-                all_features = list(binary_feature_list)
+                reuse_inputs = binary_event_features == multiclass_feature_list
+
+                # union of all event features actually fed to either model
+                all_features = list(binary_event_features)
                 if not reuse_inputs:
                     all_features += [
                         f
                         for f in multiclass_feature_list
-                        if f not in binary_feature_list
+                        if f not in binary_event_features
                     ]
 
                 # detect flagged (non-finite or large sentinel) feature values and
@@ -709,8 +856,16 @@ class TwoStageDNNProducer:
                             f"{ids[:100].tolist()}{' ...' if bad.sum() > 100 else ''}"
                         )
 
-                # precompute per-parity masks and inputs once (shared across masses)
-                parity_data = {}
+                # NaN until filled: every event must get a score from its parity
+                multiclass_predictions = np.full(
+                    (num_events, num_classes), np.nan, dtype=np.float32
+                )
+                # one column per mass hypothesis
+                binary_predictions = np.full(
+                    (num_events, len(self.masses)), np.nan, dtype=np.float32
+                )
+                assigned_mask = np.zeros(num_events, dtype=bool)
+
                 for train_parity in range(num_parities):
                     application_parity = (train_parity + 3) % num_parities
                     application_mask = event_id % num_parities == application_parity
@@ -718,6 +873,7 @@ class TwoStageDNNProducer:
                     if not np.any(application_mask):
                         continue
 
+                    assigned_mask |= application_mask
                     selected = branches[application_mask]
 
                     def build(feature_list):
@@ -729,108 +885,104 @@ class TwoStageDNNProducer:
                             axis=1,
                         )
 
-                    if reuse_inputs:
-                        parity_data[train_parity] = {
-                            "mask": application_mask,
-                            "binary_inputs": build(binary_feature_list),
-                            "multiclass_inputs": None,
-                        }
-                    else:
-                        parity_data[train_parity] = {
-                            "mask": application_mask,
-                            "binary_inputs": build(binary_feature_list),
-                            "multiclass_inputs": build(multiclass_feature_list),
-                        }
-
-                for mp in self.masses:
-                    # 0..num_classes - multiclass scores, -1 - binary score
-                    predictions = np.full(
-                        (num_events, num_classes + 1), -1.0, dtype=np.float32
+                    event_inputs = build(binary_event_features)
+                    multiclass_inputs = (
+                        event_inputs if reuse_inputs else build(multiclass_feature_list)
                     )
 
-                    for train_parity, data in parity_data.items():
-                        application_mask = data["mask"]
-                        binary_inputs = data["binary_inputs"]
-                        multiclass_inputs = (
-                            binary_inputs if reuse_inputs else data["multiclass_inputs"]
+                    # event features followed by the mass column, filled per hypothesis
+                    binary_inputs = np.empty(
+                        (event_inputs.shape[0], len(binary_feature_list)),
+                        dtype=np.float32,
+                    )
+                    binary_inputs[:, :-1] = event_inputs
+
+                    multiclass_model_path = os.path.join(
+                        models_folder,
+                        multiclass_name_pattern.format(train_parity=train_parity),
+                    )
+                    binary_model_path = os.path.join(
+                        models_folder,
+                        bin_name_pattern.format(train_parity=train_parity),
+                    )
+
+                    with onnx_session(multiclass_model_path) as ms:
+                        multiclass_scores = model_output(
+                            ms,
+                            multiclass_inputs,
+                            multiclass_spec,
+                            multiclass_model_path,
+                        )
+                        multiclass_predictions[application_mask] = convert_dnn_output(
+                            multiclass_scores, multiclass_spec, clip_eps
                         )
 
-                        binary_model_name = bin_name_pattern.format(
-                            train_parity=train_parity, mass=mp
-                        )
-                        multiclass_model_name = multiclass_name_pattern.format(
-                            train_parity=train_parity, mass=mp
-                        )
-
-                        binary_model_path = os.path.join(
-                            models_folder, binary_model_name
-                        )
-                        multiclass_model_path = os.path.join(
-                            models_folder, multiclass_model_name
-                        )
-
-                        with onnx_session(binary_model_path) as bs, onnx_session(
-                            multiclass_model_path
-                        ) as ms:
-                            bs_in = bs.get_inputs()[0].name
-                            ms_in = ms.get_inputs()[0].name
-
-                            multiclass_scores = ms.run(
-                                None, {ms_in: multiclass_inputs}
-                            )[0]
-                            binary_scores = bs.run(None, {bs_in: binary_inputs})[0]
-
-                            predictions[application_mask, :num_classes] = (
-                                multiclass_scores
+                    with onnx_session(binary_model_path) as bs:
+                        for mass_idx, mp in enumerate(self.masses):
+                            binary_inputs[:, -1] = mp
+                            binary_scores = model_output(
+                                bs, binary_inputs, binary_spec, binary_model_path
                             )
-                            predictions[application_mask, -1] = binary_scores.ravel()
+                            binary_predictions[application_mask, mass_idx] = (
+                                convert_dnn_output(
+                                    binary_scores, binary_spec, clip_eps
+                                )[:, signal_node]
+                            )
 
-                    # report events whose model OUTPUTS are non-finite (kept as-is).
-                    # only consider events actually assigned to a parity (i.e. not
-                    # left at the -1 sentinel).
-                    assigned_mask = np.zeros(num_events, dtype=bool)
-                    for data in parity_data.values():
-                        assigned_mask |= data["mask"]
+                    del selected, event_inputs, multiclass_inputs, binary_inputs
 
+                # report events whose model OUTPUTS are non-finite.
+                # only consider events actually assigned to a parity (i.e. not
+                # left at the NaN sentinel).
+                def report_nonfinite(predictions, label):
                     out_bad_mask = assigned_mask & ~np.isfinite(predictions).all(axis=1)
                     n_out_bad = int(out_bad_mask.sum())
-                    if n_out_bad:
-                        out_bad_idx = np.where(out_bad_mask)[0]
-                        out_bad_ids = event_id[out_bad_idx]
-                        also_flagged = flagged_mask[out_bad_idx]
-                        print(
-                            f"\n=== WARNING {channel}/{category}/M{mp}: "
-                            f"{n_out_bad} event(s) have non-finite MODEL OUTPUTS "
-                            f"(kept as-is) ==="
-                        )
-                        print(
-                            f"event ids: {out_bad_ids[:100].tolist()}"
-                            f"{' ...' if n_out_bad > 100 else ''}"
-                        )
-                        print(
-                            f"  of these, {int(also_flagged.sum())} also had "
-                            f"flagged input feature(s); "
-                            f"{int((~also_flagged).sum())} had clean inputs "
-                            f"(suggests model/overflow issue)."
-                        )
+                    if not n_out_bad:
+                        return
+                    out_bad_idx = np.where(out_bad_mask)[0]
+                    out_bad_ids = event_id[out_bad_idx]
+                    also_flagged = flagged_mask[out_bad_idx]
+                    print(
+                        f"\n=== WARNING {channel}/{category}/{label}: "
+                        f"{n_out_bad} event(s) have non-finite MODEL OUTPUTS ==="
+                    )
+                    print(
+                        f"event ids: {out_bad_ids[:100].tolist()}"
+                        f"{' ...' if n_out_bad > 100 else ''}"
+                    )
+                    print(
+                        f"  of these, {int(also_flagged.sum())} also had "
+                        f"flagged input feature(s); "
+                        f"{int((~also_flagged).sum())} had clean inputs "
+                        f"(suggests model/overflow issue)."
+                    )
 
-                    # check that all events have been processed
-                    assert np.all(
-                        np.isnan(predictions) | (predictions >= 0)
-                    ), f"All predictions must be filled for {channel}/{category}/M{mp}"
+                report_nonfinite(multiclass_predictions, "multiclass")
+                for mass_idx, mp in enumerate(self.masses):
+                    report_nonfinite(
+                        binary_predictions[:, mass_idx : mass_idx + 1],
+                        f"binary/M{mp}",
+                    )
 
-                    for class_idx, class_name in enumerate(class_names_list):
-                        mc_field_name = (
-                            f"multiclass_{channel}_{category}_M{mp}_{class_name}"
-                        )
-                        output_fields[mc_field_name] = predictions[:, class_idx].copy()
+                # check that all events have been processed. NaN model outputs of
+                # processed events are only reported above.
+                assert (
+                    assigned_mask.all()
+                ), f"All predictions must be filled for {channel}/{category}"
 
+                for class_idx, class_name in enumerate(class_names_list):
+                    mc_field_name = f"multiclass_{channel}_{category}_{class_name}"
+                    output_fields[mc_field_name] = multiclass_predictions[
+                        :, class_idx
+                    ].copy()
+
+                for mass_idx, mp in enumerate(self.masses):
                     bin_field_name = f"binary_{channel}_{category}_M{mp}"
-                    output_fields[bin_field_name] = predictions[:, -1].copy()
+                    output_fields[bin_field_name] = binary_predictions[
+                        :, mass_idx
+                    ].copy()
 
-                    del predictions
-
-                del parity_data
+                del multiclass_predictions, binary_predictions
 
         for field_name, values in output_fields.items():
             branches[field_name] = values
@@ -875,17 +1027,15 @@ class TwoStageDNNProducer:
             )
             return np.where(sl_mask, sl_sel, dl_sel)
 
+        # multiclass scores, mass-independent
+        for class_name in class_names_list:
+            output_fields[class_name] = select(
+                lambda ch, cat: f"multiclass_{ch}_{cat}_{class_name}"
+            )
+
+        # binary score per mass hypothesis
         for mass in self.masses:
             m = int(mass)
-
-            # multiclass scores
-            for class_name in class_names_list:
-                target_field = f"M{m}_{class_name}"
-                output_fields[target_field] = select(
-                    lambda ch, cat: f"multiclass_{ch}_{cat}_{target_field}"
-                )
-
-            # binary score
             target_field = f"M{m}_binary"
             output_fields[target_field] = select(
                 lambda ch, cat: f"binary_{ch}_{cat}_M{m}"
