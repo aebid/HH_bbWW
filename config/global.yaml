@@ -1189,14 +1189,6 @@ histTuple_flavors:
     # DNN Outputs (Shapes)
     fullResolution_variables: [ ]
 
-    # The DL fit inputs in the frozen HME windows: DNN_M<MX>_Signal only in the windows of its
-    # own mass, in SR and both control regions (e.g. SR_HMEWin_m300/res2b/DNN_M300_Signal).
-    window_regions:
-      - window: HME
-        regions: [ SR, TT_CR, DY_CR ]
-        masses: all
-        vars: [ "DNN_M{MX}_Signal" ]
-
     variables:
       - DeepHME_mass
 
@@ -1354,6 +1346,125 @@ histTuple_flavors:
         vars: [ DNN_M1400_Signal, DeepHME_mass ]
       - name: DNN_m1500_vs_HME
         vars: [ DNN_M1500_Signal, DeepHME_mass ]
+
+  Signal_Extraction_DL_window:
+    # Signal_Extraction_DL with the 2D DNN_m<MX>_vs_HME replaced by window regions: each
+    # DNN_M<MX>_Signal is also filled in SR/TT_CR/DY_CR_HMEWin_m<MX> (the base region within the
+    # frozen HME window of MX, config/windows/hme_DL_v2610.yaml), the window slice of the 2D.
+    fullResolution_variables: [ ]
+
+    window_regions:
+      - window: HME
+        regions: [ SR, TT_CR, DY_CR ]
+        masses: all
+        vars: [ "DNN_M{MX}_Signal" ]
+
+    variables:
+      - DeepHME_mass
+
+      - DNN_M250_Signal
+      - DNN_M260_Signal
+      - DNN_M270_Signal
+      - DNN_M280_Signal
+      - DNN_M300_Signal
+      - DNN_M320_Signal
+      - DNN_M350_Signal
+      - DNN_M360_Signal
+      - DNN_M400_Signal
+      - DNN_M450_Signal
+      - DNN_M500_Signal
+      - DNN_M550_Signal
+      - DNN_M600_Signal
+      - DNN_M650_Signal
+      - DNN_M700_Signal
+      - DNN_M750_Signal
+      - DNN_M800_Signal
+      - DNN_M850_Signal
+      - DNN_M900_Signal
+      - DNN_M1000_Signal
+      - DNN_M1100_Signal
+      - DNN_M1200_Signal
+      - DNN_M1300_Signal
+      - DNN_M1400_Signal
+      - DNN_M1500_Signal
+
+      - DNN_M250_TT
+      - DNN_M260_TT
+      - DNN_M270_TT
+      - DNN_M280_TT
+      - DNN_M300_TT
+      - DNN_M320_TT
+      - DNN_M350_TT
+      - DNN_M360_TT
+      - DNN_M400_TT
+      - DNN_M450_TT
+      - DNN_M500_TT
+      - DNN_M550_TT
+      - DNN_M600_TT
+      - DNN_M650_TT
+      - DNN_M700_TT
+      - DNN_M750_TT
+      - DNN_M800_TT
+      - DNN_M850_TT
+      - DNN_M900_TT
+      - DNN_M1000_TT
+      - DNN_M1100_TT
+      - DNN_M1200_TT
+      - DNN_M1300_TT
+      - DNN_M1400_TT
+      - DNN_M1500_TT
+
+      - DNN_M250_DY
+      - DNN_M260_DY
+      - DNN_M270_DY
+      - DNN_M280_DY
+      - DNN_M300_DY
+      - DNN_M320_DY
+      - DNN_M350_DY
+      - DNN_M360_DY
+      - DNN_M400_DY
+      - DNN_M450_DY
+      - DNN_M500_DY
+      - DNN_M550_DY
+      - DNN_M600_DY
+      - DNN_M650_DY
+      - DNN_M700_DY
+      - DNN_M750_DY
+      - DNN_M800_DY
+      - DNN_M850_DY
+      - DNN_M900_DY
+      - DNN_M1000_DY
+      - DNN_M1100_DY
+      - DNN_M1200_DY
+      - DNN_M1300_DY
+      - DNN_M1400_DY
+      - DNN_M1500_DY
+
+      - DNN_M250_Other
+      - DNN_M260_Other
+      - DNN_M270_Other
+      - DNN_M280_Other
+      - DNN_M300_Other
+      - DNN_M320_Other
+      - DNN_M350_Other
+      - DNN_M360_Other
+      - DNN_M400_Other
+      - DNN_M450_Other
+      - DNN_M500_Other
+      - DNN_M550_Other
+      - DNN_M600_Other
+      - DNN_M650_Other
+      - DNN_M700_Other
+      - DNN_M750_Other
+      - DNN_M800_Other
+      - DNN_M850_Other
+      - DNN_M900_Other
+      - DNN_M1000_Other
+      - DNN_M1100_Other
+      - DNN_M1200_Other
+      - DNN_M1300_Other
+      - DNN_M1400_Other
+      - DNN_M1500_Other
 
   TwoStageDNN_Outputs:
     # DNN Outputs (Shapes)
