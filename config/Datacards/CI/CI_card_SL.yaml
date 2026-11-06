@@ -22,8 +22,11 @@ input_categories:
 
 # One bin per channel and category, for the reason CI_card_DL.yaml gives: at --test
 # statistics a per-bin distribution is mostly empty or negative. No preprocess step --
-# the maker rebins, which leaves the rebinning out of what this card tests.
-hist_bins: [ 0.0, 1.0 ]
+# the maker rebins, which leaves the rebinning out of what this card tests. The binary
+# score is saved as a logit (TwoStageDNN binary_output save_as: logit, histogrammed over
+# -23.5:23.5 in config/plot/histograms.yaml), so the one bin spans that whole range: the
+# old [ 0, 1 ] of the probability score kept only logits 0-1 and dropped the rest.
+hist_bins: [ -23.5, 23.5 ]
 processes:
   # The one-lepton CI signal (custom_CI_Signal expands to XtoHHto2B2W_1L_ and _2L_${MX});
   # the two-lepton one is DL-only.
