@@ -1479,7 +1479,9 @@ histTuple_flavors:
       #   vars: [ TwoStageDNN_M1000_binary, DeepHME_mass ]
 
 StatInference:
-  config: config/Datacards/x_hh_bbww_DL_run3.yaml
+  # The cards to build, by name (DL_spin0, DL_spin2): each gets its own datacards, limits
+  # and plots. `config:` instead of `governor:` builds a single card file.
+  governor: config/Datacards/x_hh_bbww_run3.yaml
   # hist_bins is unset: the shapes reaching the datacard step are already at their final
-  # binning, cut by the `preprocess:` step the datacard configuration declares.
+  # binning, cut by the `preprocess:` step the cards declare.
   # param_values: [ 300 ]

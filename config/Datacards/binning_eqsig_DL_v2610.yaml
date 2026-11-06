@@ -1,5 +1,5 @@
 # Equal-signal binning of the DL fit inputs, v2610: read by Analysis/EqualSignalBinning.py, the
-# `preprocess:` step of x_hh_bbww_DL_run3.yaml.
+# `preprocess:` step of the DL cards (DL/dl_common.yaml).
 #
 # Each datacard category is one frozen HME window (hme_windows_DL_v2610.yaml) of the 2D
 # DNN_m<MX>_vs_HME shapes, binned in the DNN score into bins of equal signal, from the top of the

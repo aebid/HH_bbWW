@@ -23,7 +23,7 @@ production in the bb̄WW final state, built on the
 | **DeepHME** | Neural mass reconstruction of the HH system (the bb̄WW counterpart to SVfit). |
 | **B-tag-shape cache** | Per-event b-tag shape weights, pre-computed via `AnalysisCacheTask`. |
 | Resolved & boosted categories | Two topologies analysed (low- and high-p_T HH). |
-| **StatInference** | Datacards and limits (`x_hh_bbww_DL_run3.yaml`, `x_hh_bbww_SL_run3.yaml`). |
+| **StatInference** | Datacards and limits (cards listed in `x_hh_bbww_run3.yaml`: `DL/dl_spin0.yaml`, `DL/dl_spin2.yaml`; `x_hh_bbww_SL_run3.yaml`). |
 
 Setup is in [Setup](setup.md); analysis-specific run notes in
 [Running the analysis](analysis.md); the statistics step in

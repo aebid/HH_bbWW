@@ -1,0 +1,8 @@
+# The datacard cards of the HH->bbWW resonant search, by the name the StatInference law
+# tasks use for each (branches and output paths: Datacards/<card>/<era>/..., limits and
+# plots per card). global.yaml's StatInference `governor:` points here. Card paths are
+# relative to this file; the cards and the files they include are described in
+# StatInference/common/card_config.py.
+cards:
+  DL_spin0: DL/dl_spin0.yaml
+  DL_spin2: DL/dl_spin2.yaml

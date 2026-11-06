@@ -1,6 +1,12 @@
-# HH->bbWW DL resonant datacards, spin-2 (graviton) signal hypothesis.
-# The spin-0 card, x_hh_bbww_DL_run3.yaml, differs only in the signal processes, their
-# branching-ratio uncertainties and the limit-plot names and labels: keep the two in sync.
+# HH->bbWW DL resonant datacards: everything the spin-0 and spin-2 cards share.
+#
+# Not a card on its own. The cards dl_spin0.yaml and dl_spin2.yaml include it and add
+# what differs between the spins: the signal processes, their branching-ratio
+# uncertainties and the limit plots. Merging is strict (StatInference/common/card_config.py):
+# a top-level key is set in one file only, and an entry of `processes`, `uncertainties`,
+# `limit_plots` or `impact_plots` is defined once -- anything set twice is an error, never
+# an override. So a setting that differs between the spins goes in both spin cards and
+# not here.
 # ${MX} and ${ERA} are filled by StatInference.
 analysis: hh_bbww
 type: resonant
@@ -95,24 +101,6 @@ processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
-
-  # The spin-2 (graviton) X->HH signal. Run3_Model histograms both hypotheses; the spin-0
-  # card is x_hh_bbww_DL_run3.yaml. The equal-signal binning follows this signal; the HME windows and the
-  # target numbers of bins are shared by both spins (the pDNN is spin-inclusive, and spin hardly
-  # changes the HH mass).
-  - process: GluGluToBulkGraviton_bbWW_2L_${MX}
-    hist_name: GluGluToBulkGraviton_bbWW_2L_${MX}
-    # the produced X->HH points up to 1.5 TeV; the DNN has to be retrained over this
-    # grid before these cards can be built
-    param_values: [ 250, 260, 270, 280, 300, 320, 350, 360, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 1000, 1100, 1200, 1300, 1400, 1500 ]
-    is_signal: true
-    allow_zero_integral: true
-
-  - process: GluGluToBulkGraviton_bbTauTau_${MX}
-    hist_name: GluGluToBulkGraviton_bbTauTau_${MX}
-    param_values: [ 250, 260, 270, 280, 300, 320, 350, 360, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 1000, 1100, 1200, 1300, 1400, 1500 ]
-    is_signal: true
-    allow_zero_integral: true
 
   # The backgrounds are made by the preprocess step from the merged-histogram processes
   # (binning_eqsig_DL_v2610.yaml: backgrounds):
@@ -740,41 +728,6 @@ uncertainties:
     processes: [ TT ]
     categories: [ TT_boosted ]
 
-  # Higgs branching ratios: theory, so correlated across every era -- no `eras:` field,
-  # which is what makes them apply everywhere. Values from
-  # https://gitlab.cern.ch/hh/naming-conventions#experimental-uncertainties
-  #
-  # GluGluToBulkGraviton_bbWW_1L is the single-lepton signal and is not a process of this dilepton
-  # card; it belongs in these lists when the SL card gains them. The single-Higgs
-  # background H is not in them: it mixes H->bb, WW and tautau in one histogram, and its
-  # branching-ratio uncertainties (1-2 %) are small next to QCD_scale_H.
-  #
-  # BR_hww covers the whole bbWW signal although the sample is 2B2V: about 4.5 % of it is
-  # H->ZZ->2l2nu, which this nuisance over-covers and BR_hzz does not cover at all.
-  #
-  # The process patterns are regexes (a `processes:` entry beginning with ^ is matched
-  # with re.match, anything else compared literally). They have to be: by the time an
-  # uncertainty is matched, the signal's ${MX} has been resolved to the mass being built,
-  # so the process is GluGluToBulkGraviton_bbWW_2L_700 and a literal "GluGluToBulkGraviton_bbWW_2L_<MX>" matches
-  # nothing at all -- silently, since an uncertainty that applies to no process is simply
-  # never added.
-  - name: BR_hbb
-    type: lnN
-    processes:
-      - ^GluGluToBulkGraviton_bbWW_2L_
-      - ^GluGluToBulkGraviton_bbTauTau_
-    value: [ -0.0126, 0.0124 ]
-  - name: BR_hww
-    type: lnN
-    processes:
-      - ^GluGluToBulkGraviton_bbWW_2L_
-    value: [ -0.0152, 0.0153 ]
-  - name: BR_htt
-    type: lnN
-    processes:
-      - ^GluGluToBulkGraviton_bbTauTau_
-    value: [ -0.0163, 0.0165 ]
-
 autolnNThr: 0.1
 asymlnNThr: 0.001
 ignorelnNThr: 0.001
@@ -791,50 +744,6 @@ campaigns:
   Run3_2022EE: "2022postEE"
   Run3_2023: "2023preBPix"
   Run3_2023BPix: "2023postBPix"
-
-# Named and labelled with the spin, as in the spin-0 card; compared with the Run 2 DL
-# expected limit of the same spin (HIG-21-005 cards, recomputed). run2_external_limits.json holds every Run 2 reference, by channel and spin
-# (DL/spin0, DL/spin2; SL/... once available); `key` picks this plot's curve.
-limit_plots:
-  - name: spin2_run3_vs_run2
-    # Draw 1/2 sigma bands
-    bands: true
-    datacards:
-      - { name: "Early Run 3 spin-2 (graviton)", glob: "*.txt" }
-    lumi_projections:
-      - name: "Early Run 3 spin-2 scaled to 138 fb^{-1}"
-        lumi_target: 138
-    external_limits:
-      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin2" }
-    plot_params: &limit_plot_style
-      xsec: pb
-      y_log: true
-      x_min: 200
-      x_max: 1500
-      y_min: 0.001
-      y_max: 100
-
-  - name: spin2_channels
-    datacards:
-      - { name: "Combined spin-2 (graviton)", glob: "*.txt" }
-      - { name: "ee", glob: "${ERA}/eE/*.txt" }
-      - { name: "e#mu", glob: "${ERA}/eMu/*.txt" }
-      - { name: "#mu#mu", glob: "${ERA}/muMu/*.txt" }
-    external_limits:
-      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin2" }
-    plot_params: *limit_plot_style
-
-  - name: spin2_categories
-    datacards:
-      - { name: "Combined spin-2 (graviton)", glob: "*.txt" }
-      # each jet category with its own control regions (SR_res2b + TT_res2b + DY_res2b: dhi
-      # combines the cards of one mass), which constrain the TT / DY normalisations the SR shares
-      - { name: "res 2b", glob: "${ERA}/categories/*_res2b/*.txt" }
-      - { name: "recovery", glob: "${ERA}/categories/*_recovery/*.txt" }
-      - { name: "boosted", glob: "${ERA}/categories/*_boosted/*.txt" }
-    external_limits:
-      - { file: config/Datacards/run2_external_limits.json, key: "DL/spin2" }
-    plot_params: *limit_plot_style
 
 # Nuisance pulls and impacts, drawn by PlotPullsAndImpactsTask into
 # <version>/ImpactPlots/<name>/<era>/<mass>/.

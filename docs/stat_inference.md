@@ -46,10 +46,32 @@ task shells out to for the band plots.
 tree it *reads*, so a re-binning or a re-fit does not require the input histograms to be
 reproduced under a new name.
 
-The analysis configuration is [`config/Datacards/x_hh_bbww_DL_run3.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/x_hh_bbww_DL_run3.yaml),
-selected by `StatInference.config` in `config/global.yaml`. It declares the eras,
-channels, categories, mass points, processes and uncertainties — the chain reads them
-from there, not from `global.yaml`'s own variable lists.
+The datacard configuration is a set of *cards*, listed by name in the governor
+[`config/Datacards/x_hh_bbww_run3.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/x_hh_bbww_run3.yaml),
+which `StatInference.governor` in `config/global.yaml` selects (`StatInference.config`
+instead names a single card file). Each card — `DL_spin0`
+([`DL/dl_spin0.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/DL/dl_spin0.yaml))
+and `DL_spin2` (`DL/dl_spin2.yaml`) — declares the eras, channels, categories, mass points,
+processes and uncertainties; the chain reads them from there, not from `global.yaml`'s
+own variable lists. Each card gets its own datacards, limits and plots, under
+`Datacards/<card>/<era>/`, `ResonantLimitsTask/<card>/` and so on.
+
+What the spins share is in `DL/dl_common.yaml`, which both cards `include:`. The merge is
+strict: a top-level setting is made in one file only, and an entry of `processes`,
+`uncertainties`, `limit_plots` or `impact_plots` is defined once — anything set twice
+stops the chain with an error naming both files, never an override. A setting that
+differs between the spins therefore lives in each spin card, not in the shared file.
+Include paths are relative to the including file. To see a card as the chain reads it:
+
+```bash
+python3 StatInference/common/card_config.py config/Datacards/DL/dl_spin0.yaml
+```
+
+prints each setting and entry with the file it comes from; every datacard and preprocess
+output also keeps the merged card it was built from, as `card_config.yaml`.
+
+`ResonantLimitsTask`, `PlotResonantLimitsTask` and `PlotPullsAndImpactsTask` run for every
+card, or for one with `--card DL_spin0`.
 
 !!! warning "`--era` must hold every era behind the datacards"
     Which eras get datacards and limits comes from the configuration's `eras:` and
@@ -59,8 +81,8 @@ from there, not from `global.yaml`'s own variable lists.
     must name every real era those cards read — here the four of `Run3_Early` — or the
     run stops with `the cards of … need Run3_Early: …, which --era does not include`.
     Further eras are allowed and are not carded. `CreateDatacardsTask` and
-    `PreprocessShapesTask` are one workflow each, with one branch per card, and their
-    outputs (`Datacards/<card>`, `Hists_preprocessed/<card>`) do not depend on `--era`
+    `PreprocessShapesTask` are one workflow each, with one branch per card and era (and mass), and their
+    outputs (`Datacards/<card>/<era>`, `Hists_preprocessed/<card>/<era>`) do not depend on `--era`
     ([FLAF → Eras](https://cms-flaf.github.io/FLAF/concepts/eras/#which-tasks-take-several-eras)).
 
 ### Where the shape uncertainties come from
@@ -259,7 +281,7 @@ python3 StatInference/bin_opt_2d/rebin_2d.py \
   --input  "$ANALYSIS_BIG_DATA_PATH/VERSION_OF_THE_MERGED_HISTS/Hists_merged" \
   --output /tmp/$USER/rebin_Run3_Early \
   --era    Run3_Early \
-  --config config/Datacards/x_hh_bbww_DL_run3.yaml \
+  --config config/Datacards/DL/dl_spin0.yaml \
   --binning-config config/Datacards/binning_hmebox.yaml
 ```
 
@@ -279,7 +301,7 @@ To build cards outside the chain — a quick check on shapes that are already re
 cmsEnv python3 StatInference/dc_make/create_datacards.py \
   --input  PATH_TO_REBINNED_SHAPES \
   --output PATH_TO_CARDS \
-  --config config/Datacards/x_hh_bbww_DL_run3.yaml
+  --config config/Datacards/DL/dl_spin0.yaml
 ```
 
 ## 2. Run limits on existing datacards

@@ -19,7 +19,7 @@ what takes the time -- and writes the CSV plus one PDF per era:
 ```
 python3 Studies/ShapeYields/shape_yields.py \
     --input /eos/user/d/daebi/HH_bbWW/uncv2/Hists_preprocessed/Run3_Early \
-    --config config/Datacards/x_hh_bbww_DL_run3.yaml \
+    --config config/Datacards/DL/dl_spin0.yaml \
     --binning-config config/Datacards/binning_2d.yaml \
     --output Studies/ShapeYields/output/uncv2
 ```
@@ -32,7 +32,7 @@ EOS, so this is instant:
 ```
 python3 Studies/ShapeYields/shape_yields.py \
     --from-csv Studies/ShapeYields/output/uncv2/yields.csv \
-    --config config/Datacards/x_hh_bbww_DL_run3.yaml \
+    --config config/Datacards/DL/dl_spin0.yaml \
     --binning-config config/Datacards/binning_2d.yaml \
     --era Run3_Early --mass 500 --channel muMu \
     --output /tmp/slide
@@ -49,7 +49,7 @@ disagreement:
 python3 Studies/ShapeYields/verify_against_datacards.py \
     --csv Studies/ShapeYields/output/uncv2/yields.csv \
     --datacards data/uncv2/Datacards/Run3_Early \
-    --config config/Datacards/x_hh_bbww_DL_run3.yaml \
+    --config config/Datacards/DL/dl_spin0.yaml \
     --era Run3_Early
 ```
 

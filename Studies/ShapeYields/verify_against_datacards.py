@@ -21,19 +21,26 @@ Usage:
     python3 Studies/ShapeYields/verify_against_datacards.py \\
         --csv Studies/ShapeYields/output/uncv2/yields.csv \\
         --datacards data/uncv2/Datacards/Run3_Early \\
-        --config config/Datacards/x_hh_bbww_DL_run3.yaml \\
+        --config config/Datacards/DL/dl_spin0.yaml \\
         --era Run3_Early
 """
 
 import argparse
 import csv
+import os
 import re
 import sys
 from collections import defaultdict
 
 import numpy as np
 import uproot
-import yaml
+
+# The datacard configuration is read through StatInference's loader, so a card that
+# includes shared files (config/Datacards/DL/dl_spin0.yaml) is read merged.
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+)
+from StatInference.common.card_config import load_card_config  # noqa: E402
 
 
 def merged_templates(cfg):
@@ -83,8 +90,7 @@ def main():
     )
     args = p.parse_args()
 
-    with open(args.config) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_card_config(args.config)
     merged = merged_templates(cfg)
     signals = signal_names(cfg)
     masses = args.mass or next(

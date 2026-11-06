@@ -22,7 +22,7 @@ judgement about which bins are acceptable -- the numbers are the report.
 Usage:
     python3 Studies/ShapeYields/shape_yields.py \\
         --input /eos/user/d/daebi/HH_bbWW/uncv2/Hists_preprocessed/Run3_Early \\
-        --config config/Datacards/x_hh_bbww_DL_run3.yaml \\
+        --config config/Datacards/DL/dl_spin0.yaml \\
         --output Studies/ShapeYields/output/uncv2
 """
 
@@ -35,13 +35,19 @@ import sys
 
 import numpy as np
 import uproot
-import yaml
 
 import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+
+# The datacard configuration is read through StatInference's loader, so a card that
+# includes shared files (config/Datacards/DL/dl_spin0.yaml) is read merged.
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir)
+)
+from StatInference.common.card_config import load_card_config  # noqa: E402
 
 # --- palette -----------------------------------------------------------------------
 #
@@ -66,8 +72,7 @@ DERIVED_FILL = "#f0efec"
 
 
 def load_config(path):
-    with open(path) as f:
-        return yaml.safe_load(f)
+    return load_card_config(path)
 
 
 class CategoryNaming:
