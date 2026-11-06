@@ -1,0 +1,40 @@
+# The CI single-lepton card. What it shares with the other CI card is in CI_common.yaml.
+include:
+  - CI_common.yaml
+model:
+  parameters: [ MX ]
+  param_dependent_bkg: true
+  # The binary score of the two-stage single-lepton DNN, 1D.
+  input_file_pattern: ${ERA}/TwoStageDNN_M${MX}_binary/TwoStageDNN_M${MX}_binary.root
+channels:
+  - e
+  - mu
+# The single-lepton CI card: what it tests is the per-mass input categories. Each mass
+# hypothesis MX has its own signal region, SR_SL_M${MX} (the events its multiclass DNN
+# classifies as signal), and every file holds all of them; the datacard categories keep
+# one name and are read from the MX one. See x_hh_bbww_SL_run3.yaml.
+categories:
+  - SR/res2b
+  - SR/recovery
+input_categories:
+  SR/res2b: SR_SL_M${MX}/res2b
+  SR/recovery: SR_SL_M${MX}/recovery
+
+# One bin per channel and category, for the reason CI_card_DL.yaml gives: at --test
+# statistics a per-bin distribution is mostly empty or negative. No preprocess step --
+# the maker rebins, which leaves the rebinning out of what this card tests.
+hist_bins: [ 0.0, 1.0 ]
+processes:
+  # The one-lepton CI signal (custom_CI_Signal_SL); the two-lepton one is DL-only.
+  - process: XtoHHto2B2W_1L_${MX}
+    hist_name: XtoHHto2B2W_1L_${MX}
+    param_values: [ 300 ]
+    is_signal: true
+  # Only the t#bar{t} background. custom_CI_Background_DY is produced, merged, histogrammed
+  # and plotted by the integration test, but it is not valid input for a limit here: it is an
+  # amc@NLO sample, so it carries negative event weights, and `--test 1000` leaves too few
+  # events for them to cancel — the single-bin histogram came out -1669 +/- 2817, compatible
+  # with zero at 0.6 sigma but negative, which makes the datacard job flaky by construction.
+  # The CI t#bar{t} is TTto2L2Nu + TTtoLNu2Q; at --test statistics a category can still be empty.
+  - process: custom_CI_Background_TT
+    allow_zero_integral: true

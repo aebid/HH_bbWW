@@ -1140,8 +1140,8 @@ histTuple_flavors:
       - DeepHME_mass
       - CosThetaStar_HH
 
-      # Limit inputs at the CI's MX=300: CI_card_SL.yaml reads the binary score,
-      # CI_card.yaml the DNN-vs-HME plane.
+      # Limit inputs at the CI's MX=300: the CI_SL card (CI/CI_card_SL.yaml) reads the
+      # binary score, the CI_DL card (CI/CI_card_DL.yaml) the DNN-vs-HME plane.
       - TwoStageDNN_M300_binary
       - DNN_M300_Signal
       - name: DNN_m300_vs_HME

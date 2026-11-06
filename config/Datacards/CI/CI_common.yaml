@@ -1,54 +1,29 @@
+# The CI datacard cards' shared part: included by CI_card_DL.yaml and CI_card_SL.yaml, which
+# config/ci_custom.yaml lists as the cards CI_DL and CI_SL (StatInference `cards:`). It also
+# exercises the include merge the analysis cards use (StatInference/common/card_config.py):
+# a setting or a named entry is defined in one file only, anything set twice is an error.
 analysis: hh_bbww
 type: resonant
-model:
-  parameters: [ MX ]
-  param_dependent_bkg: true
-  input_file_pattern: ${ERA}/DNN_m${MX}_vs_HME/DNN_m${MX}_vs_HME.root
 signalFractionForRelevantBins: 0.2
 eras:
   - Run3_2022
   - Run3_2022EE
   - Run3_2023
   - Run3_2023BPix
-channels:
-  - muMu
-  - eMu
-  - eE
-# The datacard bins, which are what CI_binning_2d.yaml's single window produces: one
-# bin per channel and base category, named by the pattern below.
-categories:
-  - OS_Iso/res2b_hmebox0
-  - OS_Iso/recovery_hmebox0
 
-# How to take those names apart again. Must match CI_binning_2d.yaml's category_pattern.
-category_pattern: "{base_category}_hmebox{slice_idx}"
 
-# The CI reads the 2D DNN-vs-HME plane, as the production configuration does, and cuts
-# it with the same script -- so the chain the CI exercises is the chain that runs for
-# real, PreprocessShapesTask included. What differs is only the binning it is given:
-# CI_binning_2d.yaml keeps one window and one bin with every gate off, because at
-# --test statistics (--nEvents 1000, so every yield is ~1e-3 of nominal) the production
-# floors would reject every category, and a per-bin distribution that is mostly empty or
-# negative is not something combine will fit.
-preprocess:
-  script: StatInference/bin_opt_2d/rebin_2d.py
-  args:
-    - --binning-config
-    - config/Datacards/CI_binning_2d.yaml
+autolnNThr: 0.1
+asymlnNThr: 0.001
+ignorelnNThr: 0.001
+autoMCStats:
+  apply: true
+  threshold: 20
+  apply_to_signal: true
+  mode: 1
 processes:
   - process: data_obs
     is_data: true
     is_asimov_data: true
-  - process: XtoHHto2B2W_2L_${MX} # GluGluToRadion_bbWW_2L_${MX}
-    hist_name: XtoHHto2B2W_2L_${MX} # GluGluToRadion_bbWW_2L_${MX}
-    param_values: [ 300 ]
-    is_signal: true
-  # Only the t#bar{t} background. custom_CI_Background_DY is produced, merged, histogrammed
-  # and plotted by the integration test, but it is not valid input for a limit here: it is an
-  # amc@NLO sample, so it carries negative event weights, and `--test 1000` leaves too few
-  # events for them to cancel — the single-bin histogram came out -1669 +/- 2817, compatible
-  # with zero at 0.6 sigma but negative, which makes the datacard job flaky by construction.
-  - custom_CI_Background_TT
 uncertainties:
   # Split per year rather than per era: the luminosity calibration is a per-year
   # measurement, so 2022 and 2022EE share a nuisance and 2023 and 2023BPix share
@@ -343,15 +318,7 @@ uncertainties:
     type: shape
     eras:
       - Run3_2022
-  - name: CMS_res_e_2022
-    type: shape
-    eras:
-      - Run3_2022
   - name: CMS_scale_e_2022EE
-    type: shape
-    eras:
-      - Run3_2022EE
-  - name: CMS_res_e_2022EE
     type: shape
     eras:
       - Run3_2022EE
@@ -359,25 +326,7 @@ uncertainties:
     type: shape
     eras:
       - Run3_2023
-  - name: CMS_res_e_2023
-    type: shape
-    eras:
-      - Run3_2023
   - name: CMS_scale_e_2023BPix
     type: shape
     eras:
       - Run3_2023BPix
-  - name: CMS_res_e_2023BPix
-    type: shape
-    eras:
-      - Run3_2023BPix
-
-
-autolnNThr: 0.1
-asymlnNThr: 0.001
-ignorelnNThr: 0.001
-autoMCStats:
-  apply: true
-  threshold: 20
-  apply_to_signal: true
-  mode: 1

@@ -11,19 +11,20 @@ histTuple_flavor: CI
 
 QCDRegions:
   - OS_Iso
-  # The single-lepton signal region of the MX=300 hypothesis, read by CI_card_SL.yaml.
+  # The single-lepton signal region of the MX=300 hypothesis, read by the CI_SL card.
   - SR_SL_M300
 
 StatInference:
-  # TEMPORARY: the CI builds the single-lepton card, which exercises the per-mass input
-  # categories (StatInference#24). One invocation can build one datacard configuration
-  # until the combination support lands (StatInference PR "SL_DL_Cards"); then both run,
-  # and the double-lepton card below comes back.
-  config: config/Datacards/CI_card_SL.yaml
-  # config: config/Datacards/CI_card.yaml
-  # hist_bins is unset, as in global.yaml: CI_card.yaml declares a `preprocess:` step,
-  # so the shapes reaching the datacard maker are already at their final binning -- one
-  # bin per channel and category, per CI_binning_2d.yaml. CI_card_SL.yaml sets its own.
+  # Both CI cards, each with its own datacards and limit, as the analysis lists its cards.
+  # They share CI_common.yaml through `include:`, so the CI also exercises the include merge.
+  #   CI_DL: the double-lepton card, with the `preprocess:` step (rebin_2d.py, one bin per
+  #          channel and category, per CI/CI_binning_2d.yaml)
+  #   CI_SL: the single-lepton card, which exercises the per-mass input categories
+  #          (StatInference#24); no preprocess step, it sets its own hist_bins
+  # hist_bins is unset here, as in global.yaml.
+  cards:
+    CI_DL: config/Datacards/CI/CI_card_DL.yaml
+    CI_SL: config/Datacards/CI/CI_card_SL.yaml
   param_values: [ 300 ]
 
 # Do not remove DNN variables, they are needed for the datacard creation.
