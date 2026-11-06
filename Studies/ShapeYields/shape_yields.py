@@ -78,7 +78,7 @@ def load_config(path):
 class CategoryNaming:
     """Take a sliced category name apart with the pattern that put it together.
 
-    The same pattern rebin_2d.py names its output with (config/Datacards/binning_2d.yaml,
+    The same pattern rebin_2d.py names its output with (config/Datacards/DL/binning_2d.yaml,
     echoed by the datacard configuration's `category_pattern`). Kept here rather than
     imported so this tool reads only the configuration and the files, and cannot be
     broken by a change to the binner's internals.

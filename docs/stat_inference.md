@@ -254,17 +254,17 @@ preprocess:
   script: StatInference/bin_opt_2d/rebin_2d.py
   args:
     - --binning-config
-    - config/Datacards/binning_hmebox.yaml
+    - config/Datacards/DL/binning_hmebox.yaml
 ```
 
-The alternative, `config/Datacards/binning_2d.yaml`, cuts each base category into DNN
+The alternative, `config/Datacards/DL/binning_2d.yaml`, cuts each base category into DNN
 slices (`SR/res2b_dnn0…dnn3`) with HME bins inside each; the window gives a ~5% better
 expected limit with about a third fewer fit bins.
 
 The two halves live in different places on purpose. The **knobs** — strategy, slice count,
 bin budget, and the minimum signal/background yields and effective-entry floors a bin must
 satisfy — are analysis configuration, versioned with the card in
-[`config/Datacards/binning_hmebox.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/binning_hmebox.yaml).
+[`config/Datacards/DL/binning_hmebox.yaml`](https://github.com/cms-flaf/HH_bbWW/blob/main/config/Datacards/DL/binning_hmebox.yaml).
 The **derived** `binning.json` is a product, not configuration, and is written into the
 task's output on EOS beside the shapes it produced.
 
@@ -282,7 +282,7 @@ python3 StatInference/bin_opt_2d/rebin_2d.py \
   --output /tmp/$USER/rebin_Run3_Early \
   --era    Run3_Early \
   --config config/Datacards/DL/dl_spin0.yaml \
-  --binning-config config/Datacards/binning_hmebox.yaml
+  --binning-config config/Datacards/DL/binning_hmebox.yaml
 ```
 
 The datacard configuration then lists the written names in `categories:`

@@ -16,7 +16,7 @@ Output: the same layout under <output>, 1D in the DNN score, one file per era of
 
 What is merged, dropped and estimated, the windows, the gates and the target number of bins per
 window are all in the binning configuration (--binning-config); see
-config/Datacards/binning_eqsig_DL_v2610.yaml for what each entry means.
+config/Datacards/DL/binning_eqsig_DL_v2610.yaml for what each entry means.
 """
 
 import argparse

@@ -23,7 +23,7 @@ signalFractionForRelevantBins: 0.2
 # background shapes each -- 2022: 5 rejected, 2022EE: 5, 2023: 2, 2023BPix: 6, and
 # their combination: 0. It does not track luminosity; it tracks where DY's negative-weight
 # events land. Turning them back on wants either min_slice_bkg_each_neff on in
-# config/Datacards/binning_2d.yaml, so those slices are never cut, or a looser
+# config/Datacards/DL/binning_2d.yaml, so those slices are never cut, or a looser
 # max_n_sigma_for_negative_bins for DY. (Measured with binning_2d.yaml.)
 #
 # They stay in era_groups below regardless: Run3_22_23 is the combination of all four
@@ -93,7 +93,7 @@ preprocess:
   script: Analysis/EqualSignalBinning.py
   args:
     - --binning-config
-    - config/Datacards/binning_eqsig_DL_v2610.yaml
+    - config/Datacards/DL/binning_eqsig_DL_v2610.yaml
     - --jobs
     - "8"
 

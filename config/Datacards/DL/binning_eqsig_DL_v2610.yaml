@@ -8,7 +8,7 @@
 # event.
 
 # [low, high] HME window per mass and category, in GeV.
-windows: config/Datacards/hme_windows_DL_v2610.yaml
+windows: config/Datacards/DL/hme_windows_DL_v2610.yaml
 
 # Target number of bins per window, the n <= 20 that maximises the expected sensitivity of a
 # TT-only fit (v2610 study). The gates may merge the lowest bins into fewer.
