@@ -22,7 +22,14 @@ partly negative weights; a smooth fit there replaces it. Everything here works o
 """
 
 import numpy as np
-from iminuit import Minuit
+
+try:
+    from iminuit import Minuit
+except ImportError as err:
+    raise ImportError(
+        "DYTemplate (EqualSignalBinning.py's dy_template step) needs iminuit, which the CMSSW "
+        "environment provides: run it through FLAF/cmsEnv.sh, as PreprocessShapesTask does"
+    ) from err
 
 # LogPolyFit's minimisation: the limits of p in the leading coefficient -exp(p) (|a| from 2e-9 to 2e4: below
 # is nothing at these scales, above only overflows exp in a stray migrad step); the starts of that

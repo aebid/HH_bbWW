@@ -780,30 +780,35 @@ class Binning:
             for e in card.eras
         }
         out = {}
-        for e in card.eras:
-            path = os.path.join(self.output_dir, card.input_file(e, mass))
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            out[e] = ROOT.TFile(path, "RECREATE")
         reached = {}
-        for channel in card.channels:
-            for category, directory in card.categories.items():
-                per_era, bins, edges, factors, lowmass_by_era = self.bin_window(
-                    mass, channel, category, directory, files
-                )
-                reached[f"{channel}/{category}"] = len(bins)
-                for e, procs in per_era.items():
-                    self.write(
-                        out[e].mkdir(f"{channel}/{directory}", "", True),
-                        procs,
-                        bins,
-                        edges,
-                        factors,
-                        lowmass_by_era.get(e),
-                        self.lowmass["output"] if self.lowmass else None,
+        try:
+            for e in card.eras:
+                path = os.path.join(self.output_dir, card.input_file(e, mass))
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                out[e] = ROOT.TFile(path, "RECREATE")
+            for channel in card.channels:
+                for category, directory in card.categories.items():
+                    per_era, bins, edges, factors, lowmass_by_era = self.bin_window(
+                        mass, channel, category, directory, files
                     )
-        for f in out.values():
-            f.Close()
-        self.pooled.clear()
+                    reached[f"{channel}/{category}"] = len(bins)
+                    for e, procs in per_era.items():
+                        self.write(
+                            out[e].mkdir(f"{channel}/{directory}", "", True),
+                            procs,
+                            bins,
+                            edges,
+                            factors,
+                            lowmass_by_era.get(e),
+                            self.lowmass["output"] if self.lowmass else None,
+                        )
+        finally:
+            # outputs and inputs alike: with --jobs 1 every mass runs in this one process
+            for f in out.values():
+                f.Close()
+            for f in files.values():
+                f.close()
+            self.pooled.clear()
         print(f"MX={mass}: bins per window {json.dumps(reached)}", flush=True)
         return self.record.get(str(mass), {})
 
