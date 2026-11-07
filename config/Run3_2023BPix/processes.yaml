@@ -828,29 +828,36 @@ custom_CI_Background_W:
   datasets:
     - WtoLNu_amcatnloFXFX
 
-# The CI signal: one meta-process for both final states, so the CI's `--process
-# custom_CI_Signal` (cms-flaf/FLAF_ci) produces both and FLAF_ci needs no change. The pattern
-# takes the number of leptons from the dataset name, so each sample keeps its own process
-# and histogram name: XtoHHto2B2W_2L_300 for the CI_DL card, XtoHHto2B2W_1L_300 for CI_SL.
-# One `channels` list serves both, so each also gets (near-empty) histograms in the other's
-# channels; harmless for the CI.
 custom_CI_Signal:
   name: "CI -- Signal"
   color: "kBlack"
   is_meta_process: true
   meta_setup:
-    # XtoYHto2B2Wto2B2L2Nu (two leptons) and XtoYHto2B2Wto2B2Q1L1Nu (one lepton)
-    dataset_name_pattern: XtoYHto2B2Wto2B(?:2Q)?(\d)L\dNu_MX_(\d+)_MY_125
-    parameters: [ NLEP, MASS ]
-    process_name: XtoHHto2B2W_${NLEP}L_${MASS}
-    name_pattern: Xto2B2W ${NLEP}L ${MASS} GeV (x100)
+    dataset_name_pattern: XtoYHto2B2Wto2B2L2Nu_MX_(\d+)_MY_125
+    parameters: [ MASS ]
+    process_name: XtoHHto2B2W_2L_${MASS}
+    name_pattern: Xto2B2W 2L ${MASS} GeV (x100)
     to_plot:
-      - [ '2', '300' ]
-      - [ '1', '300' ]
-    plot_color: [ "kBlack", "kBlue" ]
-    channels: [ "eE", "eMu", "muMu", "e", "mu" ]
+      - [ '300' ]
+    plot_color: [ "kBlack" ]
+    channels: [ "eE", "eMu", "muMu" ]
   datasets:
     - XtoYHto2B2Wto2B2L2Nu_MX_300_MY_125
+
+custom_CI_Signal_SL:
+  name: "CI -- Signal (1L)"
+  color: "kBlue"
+  is_meta_process: true
+  meta_setup:
+    dataset_name_pattern: XtoYHto2B2Wto2B2Q1L1Nu_MX_(\d+)_MY_125
+    parameters: [ MASS ]
+    process_name: XtoHHto2B2W_1L_${MASS}
+    name_pattern: Xto2B2W 1L ${MASS} GeV (x100)
+    to_plot:
+      - [ '300' ]
+    plot_color: [ "kBlue" ]
+    channels: [ "e", "mu" ]
+  datasets:
     - XtoYHto2B2Wto2B2Q1L1Nu_MX_300_MY_125
 
 custom_CI_Data:

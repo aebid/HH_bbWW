@@ -62,8 +62,8 @@ TestModel:
     - custom_CI_Background_DY
     - custom_CI_Background_W
   signals: # WARNING: for 2024 no signal sample available, using a file from bbtt signals..
-    # both CI signal samples, 2L and 1L (see custom_CI_Signal in config/<era>/processes.yaml)
     - custom_CI_Signal
+    - custom_CI_Signal_SL
   data:
     - custom_CI_Data
 

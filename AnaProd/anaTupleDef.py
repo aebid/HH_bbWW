@@ -658,6 +658,7 @@ signals_with_hvv = {
     "GluGluToBulkGraviton_bbWW_2L",
     "XtoHHto2B2W_SingleLepton_DNN",
     "custom_CI_Signal",
+    "custom_CI_Signal_SL",
 }
 signals_without_hvv = {
     "GluGluToRadion_bbTauTau",
