@@ -1500,6 +1500,23 @@ def addDeepHMERelErr(df):
     return df
 
 
+def defineExtraElectronVariables(df):
+    """Columns for a veto on extra electrons (electrons of the AnaProd preselection other than lep1
+    and lep2), stored in the HistTuples so the veto can be applied later as a sub-region cut. In
+    the v2610 anaTuples the HWW pair prefers the LEAST isolated electron (fixed in #187 for the next
+    anaTuples), so with an extra electron the pair can be the wrong one."""
+    df = df.Define("nExtraElectron_WP80", "int(Sum(ExtraElectron_mvaIso_WP80))")
+    df = df.Define(
+        "extraElectron_maxMvaIso",
+        "nExtraElectron > 0 ? float(Max(ExtraElectron_mvaIso)) : -2.f",
+    )
+    df = df.Define(
+        "extraElectron_maxMvaIso_pt",
+        "nExtraElectron > 0 ? float(ExtraElectron_pt[ArgMax(ExtraElectron_mvaIso)]) : -1.f",
+    )
+    return df
+
+
 def PrepareDfForHistograms(dfForHistograms, isData, stage):
     dfForHistograms.defineLeptonChannel()
     dfForHistograms.df = defineAllP4(dfForHistograms.df)
@@ -1511,6 +1528,7 @@ def PrepareDfForHistograms(dfForHistograms, isData, stage):
     )
     dfForHistograms.df = AddDNNVariablesCommon(dfForHistograms.df, isData)
     dfForHistograms.df = AddDNNVariablesDL(dfForHistograms.df, isData)
+    dfForHistograms.df = defineExtraElectronVariables(dfForHistograms.df)
     dfForHistograms.defineTriggers()
     dfForHistograms.defineLeptonPreselection()
     dfForHistograms.defineQCDRegions()

@@ -1357,7 +1357,13 @@ histTuple_flavors:
     # mass MX (signal_params in histograms.yaml) and DeepHME_mass are also filled in
     # SR/TT_CR/DY_CR_HMESub_m<MX>, the base region within the frozen HME range of MX
     # (config/sub_regions/hme_DL_v2610.yaml); DNN_M<MX>_Signal there is the slice of the 2D.
-    fullResolution_variables: [ ]
+    # Stored, not histogrammed: the extra-electron columns (Analysis/hh_bbww.py,
+    # defineExtraElectronVariables), for a veto applied later as a sub-region cut.
+    fullResolution_variables:
+      - nExtraElectron
+      - nExtraElectron_WP80
+      - extraElectron_maxMvaIso
+      - extraElectron_maxMvaIso_pt
 
     regions: [ SR, TT_CR, DY_CR ]
     sub_regions:
