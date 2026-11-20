@@ -104,5 +104,8 @@ shape:
     name: CMS_scale_e_2022EE_{}
   EleSmear:
     name: CMS_res_e_2022EE_{}
-  ScaRe:
-    name: CMS_ScaRe_mu_2022EE_{}
+  # muon scale and resolution (MUO ScaRe): two independent uncertainties, as in the MUO recipe
+  MuScale:
+    name: CMS_scale_m_2022EE_{}
+  MuRes:
+    name: CMS_res_m_2022EE_{}
