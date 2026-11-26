@@ -1382,14 +1382,18 @@ histTuple_flavors:
         vars: [ DNN_M1500_Signal, DeepHME_mass ]
 
   Study_Boosted_208_138:
-    # Study flavour (HH_bbWW#208 and #138, not for production). DL only, with the categories
-    # boosted, boosted_preMsd and boosted_preMsd_pass set in the user_custom.
-    # #208: soft-drop mass and pT of the H->bb candidate before the msoftdrop > 30 requirement, and
-    #       its pT after it (boosted_preMsd_pass), with the study weight study208_noJetSF.
-    # #138: the boosted DNN output at a few masses (blind) and its five AK4-candidate inputs, with
-    #       and without the AK4 b-tag shape weight (study138_ak4shape*).
+    # Study flavour (HH_bbWW#208 and #138, study branch only), central tree only, with the
+    # user_custom study_noJetSF: true (weight_Central without the jet SFs; the AK8 H->bb SF and the
+    # AK4 b-tag shape weight stored as study_ak8sf / study_ak4shape) and the categories
+    # boosted_preMsd and boosted_preMsd_pass.
+    # #208 (DL + SL): soft-drop mass and pT of the H->bb candidate before the msoftdrop > 30
+    #       requirement (fatbjetPre_*); efficiency = boosted_preMsd_pass / boosted_preMsd.
+    # #138 (DL): the boosted DNN output at a few masses (blind) and its five AK4-candidate inputs,
+    #       with and without study_ak4shape, made offline from the histTuples.
+    # TwoStageDNN_Signal (blind) is listed so that the SL DNN cache (predicted_class of the SL
+    # regions) is attached.
     fullResolution_variables: [ ]
-    regions: [ SR, TT_CR, DY_CR ]
+    regions: [ SR, TT_CR, DY_CR, SR_SL, CR_SL_TT, CR_SL_ST, CR_SL_WJets, CR_SL_DY, CR_SL_H, CR_SL_VV ]
     variables:
       - fatbjetPre_msoftdrop
       - fatbjetPre_pt
@@ -1406,6 +1410,7 @@ histTuple_flavors:
       - DNN_M800_Signal
       - DNN_M1000_Signal
       - DNN_M1500_Signal
+      - TwoStageDNN_Signal
 
   Signal_Extraction_DL_window:
     # Signal_Extraction_DL with the 2D DNN_m<MX>_vs_HME replaced by sub-regions: the variables of

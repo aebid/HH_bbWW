@@ -107,6 +107,21 @@ def DefineWeightForHistograms(
     if corrections.to_apply.get("ele", {}).get("reco_sf", False):
         weights_this_process.add("eleReco")
 
+    # Study HH_bbWW#208/#138 (study branch only, user_custom study_noJetSF: true): the central weight
+    # without the jet SFs (AK8 H->bb SF, AK4 b-tag shape weight), and the two SFs stored per event
+    # (study_ak8sf, study_ak4shape; 1 for data or where not applied) so they can be applied offline.
+    if global_params.get("study_noJetSF", False):
+        for name, corr, col in [
+            ("study_ak8sf", "fatjet", "weight_FatJetSF_Central"),
+            ("study_ak4shape", "btag", "weight_bTagShape_Central"),
+        ]:
+            if name not in dfw.df.GetColumnNames():
+                has = process_group != "data" and corr in weights_this_process
+                dfw.df = dfw.df.Define(name, f"float({col})" if has else "1.f")
+                dfw.colToSave.append(name)
+        weights_this_process.discard("btag")
+        weights_this_process.discard("fatjet")
+
     total_weight_expression = (
         analysis.GetWeight(
             weights_this_process,

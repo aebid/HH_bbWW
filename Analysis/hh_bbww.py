@@ -223,10 +223,11 @@ class DataFrameBuilderForHistograms(DataFrameBuilderBase):
             "boosted_HW", "inclusive && (fatbjet_isValid && fatwjet_isValid)"
         )
         self.DefineAndAppend("boosted", "boosted_H || boosted_W || boosted_HW")
-        # Study HH_bbWW#208 (DL only): events with a tagged AK8 jet before the soft-drop mass
-        # requirement, and those of them that end up boosted (the requirement passed).
-        self.DefineAndAppend("boosted_preMsd", "DL && fatbjetPre_isValid")
-        self.DefineAndAppend("boosted_preMsd_pass", "boosted_preMsd && boosted")
+        # Study HH_bbWW#208 (DL and SL): events with a tagged AK8 jet (HbbvsQCD > 0.92) before the
+        # soft-drop mass requirement, and those whose H->bb candidate passes it (fatbjet_isValid).
+        # In DL, boosted_preMsd_pass == boosted. The SL W candidate is not part of this study (#207).
+        self.DefineAndAppend("boosted_preMsd", "fatbjetPre_isValid")
+        self.DefineAndAppend("boosted_preMsd_pass", "boosted_preMsd && fatbjet_isValid")
         self.DefineAndAppend("resolved", "inclusive && !boosted")
         self.DefineAndAppend("res2b", "resolved && bjet1_isBTagged && bjet2_isBTagged")
         self.DefineAndAppend("recovery", "resolved && !res2b && bjet1_isBTagged")

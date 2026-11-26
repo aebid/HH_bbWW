@@ -95,41 +95,6 @@ norm:
     expression: weight_base_pdf{scale}_rel * final_weight
     name: pdf_shape_{process}_{}
 
-  # ---- Study weights for HH_bbWW#208 / #138 (study branch only, not for datacards) ----
-  # #208: final weight without the jet SFs (neither the AK8 H->bb SF of boosted events nor the AK4
-  # b-tag shape weight of the others), so events passing and failing the soft-drop cut are treated alike.
-  study208_noJetSF:
-    expression: "(boosted ? (weight_FatJetSF_Central != 0.f ? 1.f / weight_FatJetSF_Central : 0.f) : (weight_bTagShape_Central != 0.f ? 1.f / weight_bTagShape_Central : 0.f)) * final_weight"
-    name: study208_noJetSF_{}
-  # #138: boosted events with the AK4 b-tag shape weight added, and with its variations
-  study138_ak4shape:
-    expression: "(boosted ? weight_bTagShape_Central : 1.0f) * final_weight"
-    name: study138_ak4shape_{}
-  study138_ak4shape_lf:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_lf{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_lf_{}
-  study138_ak4shape_hf:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_hf{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_hf_{}
-  study138_ak4shape_lfstats1:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_lfstats1{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_lfstats1_{}
-  study138_ak4shape_lfstats2:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_lfstats2{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_lfstats2_{}
-  study138_ak4shape_hfstats1:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_hfstats1{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_hfstats1_{}
-  study138_ak4shape_hfstats2:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_hfstats2{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_hfstats2_{}
-  study138_ak4shape_cferr1:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_cferr1{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_cferr1_{}
-  study138_ak4shape_cferr2:
-    expression: "(boosted ? weight_bTagShape_Central * weight_bTagShape_cferr2{scale}_rel : 1.0f) * final_weight"
-    name: study138_ak4shape_cferr2_{}
-
 shape:
   JER:
     name: CMS_res_j_2022_{}
