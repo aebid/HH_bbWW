@@ -1381,6 +1381,32 @@ histTuple_flavors:
       - name: DNN_m1500_vs_HME
         vars: [ DNN_M1500_Signal, DeepHME_mass ]
 
+  Study_Boosted_208_138:
+    # Study flavour (HH_bbWW#208 and #138, not for production). DL only, with the categories
+    # boosted, boosted_preMsd and boosted_preMsd_pass set in the user_custom.
+    # #208: soft-drop mass and pT of the H->bb candidate before the msoftdrop > 30 requirement, and
+    #       its pT after it (boosted_preMsd_pass), with the study weight study208_noJetSF.
+    # #138: the boosted DNN output at a few masses (blind) and its five AK4-candidate inputs, with
+    #       and without the AK4 b-tag shape weight (study138_ak4shape*).
+    fullResolution_variables: [ ]
+    regions: [ SR, TT_CR, DY_CR ]
+    variables:
+      - fatbjetPre_msoftdrop
+      - fatbjetPre_pt
+      - fatbjet_msoftdrop
+      - MT2_ll
+      - MT2_bb
+      - MT2_blbl1
+      - MT2_blbl2
+      - min_lb_dR
+      - bjet1_btagPNetB
+      - bjet2_btagPNetB
+      - DNN_M300_Signal
+      - DNN_M500_Signal
+      - DNN_M800_Signal
+      - DNN_M1000_Signal
+      - DNN_M1500_Signal
+
   Signal_Extraction_DL_window:
     # Signal_Extraction_DL with the 2D DNN_m<MX>_vs_HME replaced by sub-regions: the variables of
     # mass MX (signal_params in histograms.yaml) are also filled in SR/TT_CR/DY_CR_HMESub_m<MX>, the

@@ -348,6 +348,22 @@ fatbjet_tau4:
   use_log_y: False
   divide_by_bin_width: False
 
+fatbjetPre_msoftdrop:
+  # HH_bbWW#208: soft-drop mass of the tagged AK8 jet before the msoftdrop > 30 requirement
+  x_bins: "40|0:200"
+  x_title: m_{SD} of the H#rightarrowbb candidate before the m_{SD} cut [GeV]
+  y_title: Events
+  use_log_y: False
+  divide_by_bin_width: False
+
+fatbjetPre_pt:
+  # HH_bbWW#208: pT of the tagged AK8 jet before the msoftdrop > 30 requirement
+  x_bins: "40|200:1000"
+  x_title: p_{T} of the H#rightarrowbb candidate before the m_{SD} cut [GeV]
+  y_title: Events
+  use_log_y: True
+  divide_by_bin_width: False
+
 fatbjet_msoftdrop:
   x_bins: "50|0:200"
   x_title: fatbjet msoftdrop [GeV]

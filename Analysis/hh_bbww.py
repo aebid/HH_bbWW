@@ -223,6 +223,10 @@ class DataFrameBuilderForHistograms(DataFrameBuilderBase):
             "boosted_HW", "inclusive && (fatbjet_isValid && fatwjet_isValid)"
         )
         self.DefineAndAppend("boosted", "boosted_H || boosted_W || boosted_HW")
+        # Study HH_bbWW#208 (DL only): events with a tagged AK8 jet before the soft-drop mass
+        # requirement, and those of them that end up boosted (the requirement passed).
+        self.DefineAndAppend("boosted_preMsd", "DL && fatbjetPre_isValid")
+        self.DefineAndAppend("boosted_preMsd_pass", "boosted_preMsd && boosted")
         self.DefineAndAppend("resolved", "inclusive && !boosted")
         self.DefineAndAppend("res2b", "resolved && bjet1_isBTagged && bjet2_isBTagged")
         self.DefineAndAppend("recovery", "resolved && !res2b && bjet1_isBTagged")
@@ -790,6 +794,26 @@ def defineJetSelections(df, isData, era="Run3_2023BPix"):
     df = df.Define("fatbjet_isValid", "(Nfatbjets > 0)")
 
     df = df.Define("Hbb_Boosted", "fatbjet_isValid")
+
+    # Study HH_bbWW#208: the H->bb candidate before the soft-drop mass requirement, i.e. the AK8 jet
+    # with the highest HbbvsQCD among those passing the tagger working point alone.
+    df = df.Define(
+        "FatBJetPre_Sel", "SelectedFatJet_particleNetWithMass_HbbvsQCD > 0.92"
+    )
+    df = df.Define(
+        "FatBJetPre_idx",
+        "ROOT::VecOps::RVec<int> idx; for (size_t i = 0; i < FatBJetPre_Sel.size(); ++i) if (FatBJetPre_Sel[i]) idx.push_back(i); return idx;",
+    )
+    df = df.Define(
+        "fatbjetPre_iLead",
+        "int best = -1; for (int i : FatBJetPre_idx) if (best < 0 || SelectedFatJet_particleNetWithMass_HbbvsQCD[i] > SelectedFatJet_particleNetWithMass_HbbvsQCD[best]) best = i; return best;",
+    )
+    df = df.Define("fatbjetPre_isValid", "fatbjetPre_iLead >= 0")
+    for var in ["pt", "msoftdrop"]:
+        df = df.Define(
+            f"fatbjetPre_{var}",
+            f"fatbjetPre_isValid ? float(SelectedFatJet_{var}[fatbjetPre_iLead]) : -1.f",
+        )
 
     for var in jet_vars:
         df = df.Define(
